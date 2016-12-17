@@ -27,7 +27,8 @@ namespace ClauTextSharp.wiz
         {
             arr.RemoveAt(arr.Count - 1);
         }
-        public T at( int idx ) { return arr[idx]; }
+        public T get( int idx ) { return arr[idx]; }
+        public void set( int idx, T val) { arr[idx] = val; }
         public bool empty() { return arr.Count == 0; }
         public int size() { return arr.Count; }
     }
