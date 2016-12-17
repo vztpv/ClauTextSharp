@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClauTextSharp.wiz
 {
@@ -19,7 +16,7 @@ namespace ClauTextSharp.wiz
             arr = new List<T>();
             for (int i = 0; i < capacity; ++i)
             {
-                arr.Add(new T());
+                arr.Add(default(T));
             }
         }
 
