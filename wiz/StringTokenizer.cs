@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -61,6 +61,7 @@ namespace ClauTextSharp.wiz
         public StringTokenizer() { _m_count = 0; _m_exist = false; }
         public StringTokenizer(String str, String separator)
         {
+            _m_str = new Vector<String>();
             _m_count = 0;
             _m_exist = false;
 
