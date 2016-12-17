@@ -4,7 +4,7 @@ using System.Linq; // in Ling, there is Last method?
 
 namespace ClauTextSharp.wiz
 {
-    class Vector<T>
+    public class Vector<T>
     {
         private List<T> arr;
 
@@ -35,5 +35,8 @@ namespace ClauTextSharp.wiz
         }
         public void set(int idx, T val) { arr[idx] = val; }
         public T get(int idx) { return arr[idx];  }
+
+        public int size() { return arr.Count; }
+        public bool empty() { return arr.Count == 0; }
     }
 }

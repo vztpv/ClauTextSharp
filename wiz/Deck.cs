@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ClauTextSharp.wiz
 {
-    class Deck<T>
+    public class Deck<T>
     {
         private LinkedList<T> list;
 
