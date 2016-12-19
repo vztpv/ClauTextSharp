@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ClauTextSharp.wiz
 {
-    public class ArrayQueue<T> : ICloneable where T : ICloneable
+    public class ArrayQueue<T>
     {
         private List<T> arr;
         private int start = 0;
@@ -18,22 +18,6 @@ namespace ClauTextSharp.wiz
             {
                 arr.Add(default(T));
             }
-        }
-
-        public Object Clone()
-        {
-            ArrayQueue<T> temp = new ArrayQueue<T>();
-
-            temp.start = this.start;
-            temp.num = this.num;
-            temp.capacity = this.capacity;
-
-            foreach(T x in this.arr)
-            {
-                temp.arr.Add(x);
-            }
-
-            return temp;
         }
 
         private bool is_full()

@@ -4,25 +4,13 @@ using System.Collections.Generic;
 
 namespace ClauTextSharp.wiz
 {
-    public class ArrayStack<T> : ICloneable where T : ICloneable
+    public class ArrayStack<T>
     {
         private List<T> arr;
 
         public ArrayStack()
         {
             arr = new List<T>();
-        }
-
-        public Object Clone()
-        {
-            List<T> temp = new List<T>();
-
-            foreach (T x in this.arr)
-            {
-                temp.Add(x);
-            }
-
-            return temp;
         }
 
         public void push( T val )
