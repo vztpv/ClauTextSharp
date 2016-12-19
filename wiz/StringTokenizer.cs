@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -90,27 +90,27 @@ namespace ClauTextSharp.wiz
 
             Init(str, vec);
         }
-        int countTokens()
+        public int countTokens()
         {
             return _m_str.size();
         }
-        string nextToken()
+        public string nextToken()
         {
             if (hasMoreTokens())
             {
                 _m_count++;
-                return _m_str.get(_m_count - 1);
+                return _m_str.get(_m_count - 1); //
             }
             else {
                 return "";
             }
         }
-        bool hasMoreTokens()
+        public bool hasMoreTokens()
         {
             return _m_count<_m_str.size();
         }
 
-		bool isFindExist()
+        public bool isFindExist()
 		{
 			return _m_exist;
 		}

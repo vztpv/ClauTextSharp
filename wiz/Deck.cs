@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ClauTextSharp.wiz
 {
-    public class Deck<T>
+    public class Deck<T> : ICloneable where T : ICloneable
     {
         private LinkedList<T> list;
 
@@ -13,13 +13,25 @@ namespace ClauTextSharp.wiz
             list = new LinkedList<T>();
         }
 
-        void push_front( T val ) { list.AddFirst(val); }
-        void push_back( T val ) { list.AddLast(val); }
+        public Object Clone()
+        {
+            LinkedList<T> temp = new LinkedList<T>();
 
-        T pop_front() { T temp = list.First(); list.RemoveFirst(); return temp; }
-        T pop_back() { T temp = list.Last(); list.RemoveLast(); return temp; }
+            foreach (T x in this.list)
+            {
+                temp.AddLast((T)x.Clone());
+            }
 
-        bool empty() { return list.Count == 0; }
-        int size() { return list.Count; }
+            return temp;
+        }
+
+        public void push_front( T val ) { list.AddFirst((T)val.Clone()); } //
+        public void push_back( T val ) { list.AddLast((T)val.Clone()); } //
+
+        public T pop_front() { T temp = (T)list.First().Clone(); list.RemoveFirst(); return temp; } //
+        public T pop_back() { T temp = (T)list.Last().Clone(); list.RemoveLast(); return temp; } //
+
+        public bool empty() { return list.Count == 0; }
+        public int size() { return list.Count; }
     }
 }
