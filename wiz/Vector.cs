@@ -4,7 +4,7 @@ using System.Linq; // in Ling, there is Last method?
 
 namespace ClauTextSharp.wiz
 {
-    public class Vector<T> : ICloneable where T : ICloneable
+    public class Vector<T>
     {
         private List<T> arr;
 
@@ -23,26 +23,13 @@ namespace ClauTextSharp.wiz
             arr = new List<T>();
         }
 
-        public Object Clone()
-        {
-            List<T> temp = new List<T>();
-
-            temp.Capacity = this.arr.Capacity;
-            for (int i = 0; i < this.arr.Count; ++i)
-            {
-                temp.Add((T)(this.arr[i].Clone()));
-            }
-
-            return temp;
-        }
-
         public void push_back(T val)
         {
-            arr.Add((T)val.Clone()); //
+            arr.Add(val); //
         }
         public T back()
         {
-            return (T)(arr.Last().Clone()); //
+            return arr.Last(); //
         }
         public void pop_back()
         {
@@ -50,8 +37,8 @@ namespace ClauTextSharp.wiz
         }
 
         // [] ?
-        public void set(int idx, T val) { arr[idx] = (T)val.Clone(); } //
-        public T get(int idx) { return (T)arr[idx].Clone();  } //
+        public void set(int idx, T val) { arr[idx] = val; } //
+        public T get(int idx) { return arr[idx];  } //
 
         public int size() { return arr.Count; }
         public bool empty() { return arr.Count == 0; }

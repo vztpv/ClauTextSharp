@@ -30,7 +30,7 @@ namespace ClauTextSharp.wiz
 
             foreach(T x in this.arr)
             {
-                temp.arr.Add((T)x.Clone());
+                temp.arr.Add(x);
             }
 
             return temp;
@@ -74,7 +74,7 @@ namespace ClauTextSharp.wiz
         public void push(T val)
         {
             if( is_full() ) { expand(); }
-            arr[(start + num) & (capacity - 1)] = (T)val.Clone(); //
+            arr[(start + num) & (capacity - 1)] = val; //
             num++;
         }
         private void push2(T val) 
@@ -95,8 +95,8 @@ namespace ClauTextSharp.wiz
 
             return temp;
         }
-        public void set(int idx, T val) { arr[(start + idx) & (capacity - 1)] = (T)val.Clone(); } //
-        public T get(int idx) { return (T)arr[(start + idx) & (capacity - 1)].Clone(); } //
+        public void set(int idx, T val) { arr[(start + idx) & (capacity - 1)] = val; } //
+        public T get(int idx) { return arr[(start + idx) & (capacity - 1)]; } //
         public bool empty() { return arr.Count == 0; }
         public int size() { return arr.Count; }
     }

@@ -19,7 +19,7 @@ namespace ClauTextSharp.wiz
 
             foreach (T x in this.arr)
             {
-                temp.Add((T)x.Clone());
+                temp.Add(x);
             }
 
             return temp;
@@ -27,18 +27,18 @@ namespace ClauTextSharp.wiz
 
         public void push( T val )
         {
-            arr.Add((T)val.Clone());
+            arr.Add(val);
         }
         public T top()
         {
-            return (T)arr[arr.Count - 1].Clone(); //
+            return arr[arr.Count - 1]; //
         }
         public void pop() // C++ std style.
         {
             arr.RemoveAt(arr.Count - 1);
         }
-        public T get( int idx ) { return (T)arr[idx].Clone(); } //
-        public void set( int idx, T val) { arr[idx] = (T)val.Clone(); } //
+        public T get( int idx ) { return arr[idx]; } //
+        public void set( int idx, T val) { arr[idx] = val; } //
         public bool empty() { return arr.Count == 0; }
         public int size() { return arr.Count; }
     }
