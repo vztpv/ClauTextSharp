@@ -36,6 +36,10 @@ namespace ClauTextSharp.wiz
             arr.RemoveAt(arr.Count - 1);
         }
 
+        public void clear()
+        {
+            arr.Clear();
+        }
         // [] ?
         public void set(int idx, T val) { arr[idx] = val; } //
         public T get(int idx) { return arr[idx];  } //

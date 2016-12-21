@@ -52,7 +52,7 @@ namespace ClauTextSharp.wiz
             }
             for( int i=0; i < other.num; ++i)
             {
-                this.push2(other.get(i));
+                this.push(other.get(i));
             }
         }
         public void push(T val)
@@ -61,12 +61,7 @@ namespace ClauTextSharp.wiz
             arr[(start + num) & (capacity - 1)] = val; //
             num++;
         }
-        private void push2(T val) 
-        {
-            if (is_full()) { expand(); }
-            arr[(start + num) & (capacity - 1)] = val; //
-            num++;
-        }
+        
         public T pop()
         {
             T temp = arr[start]; //

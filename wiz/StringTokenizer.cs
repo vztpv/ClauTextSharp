@@ -10,7 +10,7 @@ namespace ClauTextSharp.wiz
         private int _m_count;
         private bool _m_exist;
 
-        private void Init(String str, Vector<String> separator) // assumtion : separators are sorted by length?, long -> short
+        private void Init(String str, Vector<String> separator) // assumtion : separators are sorted by length?, long . short
         {
             if (separator.empty() || str.Count() == 0) { return; } // if str.empty() == false then _m_str.push_back(str); // ?
 
