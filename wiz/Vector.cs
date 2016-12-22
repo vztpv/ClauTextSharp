@@ -22,6 +22,15 @@ namespace ClauTextSharp.wiz
         {
             arr = new List<T>();
         }
+        public Vector(List<T> other)
+        {
+            arr = new List<T>();
+
+            for( int i=0; i < other.Count; ++i)
+            {
+                arr.Add(other[i]);
+            }
+        }
 
         public void push_back(T val)
         {
@@ -46,5 +55,23 @@ namespace ClauTextSharp.wiz
 
         public int size() { return arr.Count; }
         public bool empty() { return arr.Count == 0; }
+
+        public void insert(int idx, T val)
+        {
+            arr.Insert(idx, val);
+        }
+        public void reverse() // chk!
+        {
+            int middle = arr.Count / 2;
+            T temp = default(T);
+               
+            for( int i=0; i < middle; ++i)
+            {
+                // swap arr[i] and arr[arr.Count-1 - i]
+                temp = arr[i];
+                arr[i] = arr[arr.Count - 1 - i];
+                arr[arr.Count - 1 - i] = temp;
+            }
+        }
     }
 }
