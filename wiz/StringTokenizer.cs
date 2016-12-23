@@ -96,7 +96,7 @@ namespace ClauTextSharp.wiz
         {
             return _m_str.size();
         }
-        public string nextToken()
+        public String nextToken()
         {
             if (hasMoreTokens())
             {

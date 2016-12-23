@@ -9,7 +9,7 @@ namespace ClauTextSharp.load_data
         private bool _m_inited;
 
         // ructor.
-        public ItemType() : base()
+        public ItemType() : base("")
         {
             _m_inited = false;
             _m_val = default(T);

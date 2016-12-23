@@ -8,14 +8,15 @@ using ClauTextSharp.wiz;
 
 namespace ClauTextSharp.load_data
 {
-    class Utility
+    public class Utility
     {
-
         // need reanme?, // for speed up?
-        private static String[] specialStr =  { "^",   " ",    "\t",   "\r",   "\n",   "#"  };
-        private static String[] specialStr2 = { "^0",  "^1",   "^2",   "^3",   "^4",   "^5" };
-        private static Vector<String> beforeStrVec = new Vector<String>(new List<String> { " ", "\t", "\r", "\n" });
-        private static Vector<String> afterStrVec = new Vector<String>(new List<String> { "^1", "^2", "^3", "^4" });
+        public readonly static String[] specialStr =  { "^",   " ",    "\t",   "\r",   "\n",   "#"  };
+        public readonly static String[] specialStr2 = { "^0",  "^1",   "^2",   "^3",   "^4",   "^5" };
+        public readonly static Vector<String> reverse_specialStr = new Vector<String>(new List<String> { "#", "\n", "r", "\t", " ", "^" });
+        public readonly static Vector<String> reverse_specialStr2 = new Vector<String>(new List<String> { "^5", "^4", "^3", "^2", "^1", "^0" });
+        public readonly static Vector<String> beforeWhitespaceVec = new Vector<String>(new List<String> { " ", "\t", "\r", "\n" });
+        public readonly static Vector<String> afterWhitespaceVec = new Vector<String>(new List<String> { "^1", "^2", "^3", "^4" });
 
    
         public Utility() { }
@@ -323,7 +324,7 @@ namespace ClauTextSharp.load_data
                 data.strVec.set(i, AddSpace(data.strVec.get(i)));
 
 				if (chkStr) {
-					data.strVec.set(i, ChangeStr(data.strVec.get(i), beforeStrVec, afterStrVec));
+					data.strVec.set(i, ChangeStr(data.strVec.get(i), beforeWhitespaceVec, afterWhitespaceVec));
 				}
 			}
         }
@@ -354,13 +355,12 @@ namespace ClauTextSharp.load_data
 
             return 0 == state;
         }
-        public static Pair<bool, int> Reserve2(FileStream inFile, ArrayQueue<String> aq, int num = 1)
+        public static Pair<bool, int> Reserve2(StreamReader sr, ArrayQueue<String> aq, int num = 1)
         {
             int count = 0;
             String temp = "";
-            Vector<String> strVecTemp = new Vector<string>();
+            Vector<String> strVecTemp = new Vector<String>();
             ArrayQueue<String>[] arrayQueue = new ArrayQueue<String>[4];
-            StreamReader sr = new StreamReader(inFile);
 
             for (int i = 0; i < num && false == sr.EndOfStream; ++i)
             {
@@ -465,12 +465,11 @@ namespace ClauTextSharp.load_data
         }
 
         /// must lineNum > 0
-        public static Pair<bool, int> Reserve(FileStream inFile, ArrayQueue<String> strVec, int num = 1)
+        public static Pair<bool, int> Reserve(StreamReader sr, ArrayQueue<String> strVec, int num = 1)
         {
-            string temp = "";
+            String temp = "";
             int count = 0;
-
-            StreamReader sr = new StreamReader(inFile);
+            
 
             for (int i = 0; i < num && false == sr.EndOfStream; ++i)
             {
@@ -518,10 +517,10 @@ namespace ClauTextSharp.load_data
         /// now not use!!
     
 		// To Do
-		// AddSpace : return string
-		public static string AddSpace(String str)
+		// AddSpace : return String
+		public static String AddSpace(String str)
         {
-            string temp = "";
+            String temp = "";
 
             for (int i = 0; i < str.Length; ++i)
             {
@@ -556,7 +555,7 @@ namespace ClauTextSharp.load_data
         /// need testing!
         public static String PassSharp(String str)
         {
-            string temp = "";
+            String temp = "";
             int state = 0;
 
             for (int i = 0; i < str.Length; ++i)

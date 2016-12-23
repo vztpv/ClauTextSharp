@@ -32,6 +32,7 @@ namespace ClauTextSharp.wiz
             }
         }
 
+
         public void push_back(T val)
         {
             arr.Add(val); //
@@ -72,6 +73,11 @@ namespace ClauTextSharp.wiz
                 arr[i] = arr[arr.Count - 1 - i];
                 arr[arr.Count - 1 - i] = temp;
             }
+        }
+
+        public void sort()
+        {
+            arr.Sort();
         }
     }
 }

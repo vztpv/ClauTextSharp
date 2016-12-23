@@ -37,5 +37,15 @@ namespace ClauTextSharp.wiz
         {
             return subString(str, start, str.Length - 1);
         }
+        public static String replace(String str, String target, String result)
+        {
+            return str.Replace(target, result);
+        }
+        public static String reverse(String str) // chk!
+        {
+            char[] strArr = str.ToCharArray();
+            Array.Reverse(strArr);
+            return new String(strArr);
+        }
     }
 }

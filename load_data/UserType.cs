@@ -35,7 +35,7 @@ namespace ClauTextSharp.load_data
         private UserType parent;
 
         // ructor.
-        public UserType()
+        public UserType(String name = "") : base(name)
         {
             ilist = new Vector<int>();
             itemList = new Vector<ItemType<String>>();
@@ -274,8 +274,8 @@ namespace ClauTextSharp.load_data
         public void Remove()
         {
             /// parent.removeUserType(name); - ToDo - X
-            ilist.clear(); // = vector<int>();
-            itemList.clear(); // = vector<ItemType<string>>();
+            ilist.clear(); // = Vector<int>();
+            itemList.clear(); // = Vector<ItemType<String>>();
 
             RemoveUserTypeList();
         }
@@ -403,9 +403,14 @@ namespace ClauTextSharp.load_data
             userTypeList.set(userTypeIndex, temp);
         }
         //
-        public void AddItem(String name, String item)
+        public void AddItemType(ItemType<String> item)
         {
-            itemList.push_back(new ItemType<String>(name, item));
+            itemList.push_back(item);
+            ilist.push_back(1);
+        }
+        public void AddItem(String name, String val)
+        {
+            itemList.push_back(new ItemType<String>(name, val));
             ilist.push_back(1);
         }
         public void AddUserTypeItem(UserType item)
@@ -435,7 +440,7 @@ namespace ClauTextSharp.load_data
         
         public Vector<ItemType<String>> GetItem(String name)
         {
-			Vector<ItemType<String>> temp = new Vector<ItemType<string>>();
+			Vector<ItemType<String>> temp = new Vector<ItemType<String>>();
 
 			for (int i = 0; i < itemList.size(); ++i) {
 				if (itemList.get(i).GetName() == name) {
@@ -478,7 +483,7 @@ namespace ClauTextSharp.load_data
 
 			return temp;
 		}
-        public bool GetLastUserTypeItemRef(string name, UserType refUT)
+        public bool GetLastUserTypeItemRef(String name, UserType refUT)
         {
             int idx = -1;
 
@@ -496,14 +501,12 @@ namespace ClauTextSharp.load_data
             return idx > -1;
         }
 
-
         // Save?
         /// save1 - like EU4 savefiles. , FileStream . StreamWriter?
-        private void Save1(FileStream stream, UserType ut, int depth = 0)
+        private void Save1(StreamWriter sw, UserType ut, int depth = 0)
         {
 			int itemListCount = 0;
             int userTypeListCount = 0;
-            StreamWriter sw = new StreamWriter(stream);
 
 			for (int i = 0; i < ut.ilist.size(); ++i) {
 				if (ut.IsItemType(i)) {
@@ -534,7 +537,7 @@ namespace ClauTextSharp.load_data
 					}
                     sw.WriteLine("{");
                     
-                    Save1(stream, ut.userTypeList.get(userTypeListCount), depth + 1);
+                    Save1(sw, ut.userTypeList.get(userTypeListCount), depth + 1);
                     sw.WriteLine("");
                     						
 					for (int k = 0; k < depth; ++k) {
@@ -551,12 +554,10 @@ namespace ClauTextSharp.load_data
 			}
 		}
 		/// save2 - for more seed loading data!
-		private void Save2(FileStream stream, UserType ut, int depth = 0)
+		private void Save2(StreamWriter sw, UserType ut, int depth = 0)
         {
 			int itemListCount = 0;
             int userTypeListCount = 0;
-
-            StreamWriter sw = new StreamWriter(stream);
 
 			for (int i = 0; i < ut.ilist.size(); ++i) {
 				if (ut.IsItemType(i)) {
@@ -583,7 +584,7 @@ namespace ClauTextSharp.load_data
 					sw.WriteLine("{");
 
 
-                    Save2(stream, ut.userTypeList.get(userTypeListCount), depth + 1);
+                    Save2(sw, ut.userTypeList.get(userTypeListCount), depth + 1);
                     sw.WriteLine("");
 						
 					for (int k = 0; k < depth; ++k) {
@@ -597,13 +598,13 @@ namespace ClauTextSharp.load_data
 				}
 			}
 		}
-	    public void Save1(FileStream stream)
+	    public void Save1(StreamWriter sw)
         {
-            Save1(stream, this);
+            Save1(sw, this);
 		}
-        public void Save2(FileStream stream)
+        public void Save2(StreamWriter sw)
         {
-            Save2(stream, this);
+            Save2(sw, this);
 		}
         public String ItemListToString()
 		{
@@ -661,7 +662,7 @@ namespace ClauTextSharp.load_data
 					temp.push_back(userTypeList.get(userTypeListCount).GetName());
 				}
 				else {
-					temp.push_back(" "); // chk!! cf) wiz::load_data::Utility::Find function...
+					temp.push_back(" "); // chk!! cf) wiz.load_data.Utility.Find function...
 				}
 				userTypeListCount++;
 			}
@@ -677,7 +678,7 @@ namespace ClauTextSharp.load_data
 					temp = temp + userTypeList.get(userTypeListCount).GetName();
 				}
 				else {
-					temp = temp + " "; // chk!! cf) wiz::load_data::Utility::Find function...
+					temp = temp + " "; // chk!! cf) wiz.load_data.Utility.Find function...
 				}
 
 				if (i != itemList.size() - 1)
@@ -695,7 +696,7 @@ namespace ClauTextSharp.load_data
             int userTypeListCount = 0;
 
 			for (int i = 0; i<ilist.size(); ++i) {
-				//std::cout << "ItemList" << endl;
+				//std.cout << "ItemList" << endl;
 				if (IsItemType(i)) {
 					for (int j = 0; j < itemList.get(itemListCount).size(); j++) {
 						if (itemList.get(itemListCount).GetName() != "")
@@ -710,7 +711,7 @@ namespace ClauTextSharp.load_data
 					itemListCount++;
 				}
 				else {
-					// std::cout << "UserTypeList" << endl;
+					// std.cout << "UserTypeList" << endl;
 					if (userTypeList.get(userTypeListCount).GetName() != "") {
 						temp = temp + userTypeList.get(userTypeListCount).GetName() + " = ";
 					}
@@ -791,13 +792,13 @@ namespace ClauTextSharp.load_data
 			}
 
 			StringTokenizer tokenizer = new StringTokenizer(position, "/");
-            Vector<String> strVec = new Vector<string>();
+            Vector<String> strVec = new Vector<String>();
             Deck<Pair<UserType, int>> utDeck = new Deck<Pair<UserType, int>>();
             Pair<UserType, int> utTemp = new Pair<UserType, int>(global, 0);
             ItemType<UserType> utTemp2 = new ItemType<UserType>();
 
 			for (int i = 0; i<tokenizer.countTokens(); ++i) {
-				string strTemp = tokenizer.nextToken();
+				String strTemp = tokenizer.nextToken();
 				if (strTemp == "root" && i == 0) {
 				}
 				else {
