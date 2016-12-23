@@ -31,6 +31,11 @@ namespace ClauTextSharp.wiz
                 arr.Add(other[i]);
             }
         }
+        // deep copy?
+        public Vector(Vector<T> other)
+        {
+            arr = new List<T>(other.arr);
+        }
 
 
         public void push_back(T val)

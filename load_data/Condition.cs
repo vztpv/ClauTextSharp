@@ -25,7 +25,7 @@ namespace ClauTextSharp.load_data
             this.option = option;
             this.tokenVec = new Vector<String>();
             this.tokenStack = new ArrayStack<String>();
-
+            this.global = global;
             Init(condition);
         }
 

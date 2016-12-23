@@ -288,6 +288,15 @@ namespace ClauTextSharp.load_data
             public ArrayQueue<String> aq;
             public int strVecStart;
             public int strVecEnd;
+
+            public DoThreadData() {  }
+            public DoThreadData(DoThreadData other)
+            {
+                strVec = other.strVec;
+                aq = other.aq;
+                strVecStart = other.strVecStart;
+                strVecEnd = other.strVecEnd;
+            }
         }
         private static void DoThread(object param) // need to rename!
         {
@@ -307,10 +316,18 @@ namespace ClauTextSharp.load_data
             public Vector<String> strVec;
             public int strVecStart;
             public int strVecEnd;
+
+            public DoThreadData2() {  }
+            public DoThreadData2(DoThreadData2 other)
+            {
+                strVec = other.strVec;
+                strVecStart = other.strVecStart;
+                strVecEnd = other.strVecEnd;
+            }
         }
 
         private static void DoThread2(object val) {
-            DoThreadData2 data = (DoThreadData2)val;
+            DoThreadData2 data = new DoThreadData2((DoThreadData2)val);
 
 			for (int i = data.strVecStart; i <= data.strVecEnd; ++i)
 			{
@@ -362,6 +379,11 @@ namespace ClauTextSharp.load_data
             Vector<String> strVecTemp = new Vector<String>();
             ArrayQueue<String>[] arrayQueue = new ArrayQueue<String>[4];
 
+            for( int i=0; i < 4; ++i)
+            {
+                arrayQueue[i] = new ArrayQueue<String>();
+            }
+
             for (int i = 0; i < num && false == sr.EndOfStream; ++i)
             {
                 temp = sr.ReadLine();
@@ -380,22 +402,22 @@ namespace ClauTextSharp.load_data
                 param.strVecEnd = count / 4 - 1;
 
                 threadA = new Thread(DoThread2);
-                threadA.Start(param);
+                threadA.Start(new DoThreadData2(param));
 
                 param.strVecStart = count / 4;
                 param.strVecEnd = (count / 4) * 2 - 1;
                 threadB = new Thread(DoThread2);
-                threadB.Start(param);
+                threadB.Start(new DoThreadData2(param));
 
                 param.strVecStart = (count / 4) * 2;
                 param.strVecEnd = (count / 4) * 3 - 1;
                 threadC = new Thread(DoThread2);
-                threadC.Start(param);
+                threadC.Start(new DoThreadData2(param));
 
                 param.strVecStart = (count / 4) * 3;
                 param.strVecEnd = count - 1;
                 threadD = new Thread(DoThread2);
-                threadD.Start(param);
+                threadD.Start(new DoThreadData2(param));
 
                 threadA.Join();
                 threadB.Join();
@@ -417,28 +439,31 @@ namespace ClauTextSharp.load_data
                 DoThreadData param = new DoThreadData();
                 Thread threadA, threadB, threadC, threadD;
                 param.strVec = strVecTemp;
-                param.aq = aq;
+                param.aq = arrayQueue[0];
 
                 param.strVecStart = 0;
                 param.strVecEnd = count / 4 - 1;
 
                 threadA = new Thread(DoThread);
-                threadA.Start(param);
+                threadA.Start(new DoThreadData(param));
 
+                param.aq = arrayQueue[1];
                 param.strVecStart = count / 4;
                 param.strVecEnd = (count / 4) * 2 - 1;
                 threadB = new Thread(DoThread);
-                threadB.Start(param);
+                threadB.Start(new DoThreadData(param));
 
+                param.aq = arrayQueue[2];
                 param.strVecStart = (count / 4) * 2;
                 param.strVecEnd = (count / 4) * 3 - 1;
                 threadC = new Thread(DoThread);
-                threadC.Start(param);
+                threadC.Start(new DoThreadData(param));
 
+                param.aq = arrayQueue[3];
                 param.strVecStart = (count / 4) * 3;
                 param.strVecEnd = count - 1;
                 threadD = new Thread(DoThread);
-                threadD.Start(param);
+                threadD.Start(new DoThreadData(param));
 
                 threadA.Join();
                 threadB.Join();
@@ -485,7 +510,7 @@ namespace ClauTextSharp.load_data
         {
             return strVec.get(0);
         }
-        public static String Pop(ArrayQueue<String>  strVec)
+        public static String Pop(ArrayQueue<String> strVec)
         {
             return strVec.pop();
         }

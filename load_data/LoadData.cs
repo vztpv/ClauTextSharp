@@ -31,7 +31,7 @@ namespace ClauTextSharp.load_data
 
 
         /// core
-        public static bool _LoadData(ArrayQueue<String> strVec, Reserver vecReserver, UserType global) // first, strVec.empty() must be true!!
+        public static bool _LoadData(ArrayQueue<String> strVec, Reserver vecReserver, ref UserType global) // first, strVec.empty() must be true!!
         {
             int state = 0;
             int braceNum = 0;
@@ -39,8 +39,6 @@ namespace ClauTextSharp.load_data
             ArrayStack<int> do_reserve = new ArrayStack<int>();
             Vector<UserType> nestedUT = new Vector<UserType>(1);
             String var1 = "", var2 = "", val = "";
-
-            bool varOn = false;
 
             nestedUT.set(0, global);
             {
@@ -83,14 +81,14 @@ namespace ClauTextSharp.load_data
                                 else
                                 {
                                     var1 = Utility.Pop(strVec);
-                                    nestedUT.get(braceNum).AddItem("", var1);
+                                    nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
                                     state = 0;
                                 }
                             }
                             else
                             {
                                 var1 = Utility.Pop(strVec);
-                                nestedUT.get(braceNum).AddItem("", var1);
+                                nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
                                 state = 0;
                             }
                         }
@@ -113,9 +111,9 @@ namespace ClauTextSharp.load_data
                             Utility.Pop(strVec);
 
                             ///
-                            nestedUT.get(braceNum).AddUserTypeItem(new UserType(var2));
+                            nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2.Clone()));
                             UserType pTemp = new UserType();
-                            nestedUT.get(braceNum).GetLastUserTypeItemRef(var2, pTemp);
+                            nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2.Clone(), ref pTemp);
 
                             braceNum++;
 
@@ -132,7 +130,7 @@ namespace ClauTextSharp.load_data
                         {
                             val = Utility.Pop(strVec);
 
-                            nestedUT.get(braceNum).AddItem(var2, val);
+                            nestedUT.get(braceNum).AddItem((String)var2.Clone(), (String)val.Clone());
                             var2 = "";
                             val = "";
 
@@ -172,7 +170,7 @@ namespace ClauTextSharp.load_data
 
                             nestedUT.get(braceNum).AddUserTypeItem(temp);
                             UserType pTemp = new UserType();
-                            nestedUT.get(braceNum).GetLastUserTypeItemRef("", pTemp);
+                            nestedUT.get(braceNum).GetLastUserTypeItemRef("", ref pTemp);
 
                             braceNum++;
 
@@ -210,13 +208,15 @@ namespace ClauTextSharp.load_data
                                     // var2
                                     var2 = Utility.Pop(strVec);
                                     Utility.Pop(strVec); // pass EQ
+                                    
                                     state = 6;
                                 }
                                 else
                                 {
                                     // var1
                                     var1 = Utility.Pop(strVec);
-                                    nestedUT.get(braceNum).AddItem("", var1);
+                                    if( var1 == null ) { Console.WriteLine("ERror : " + strVec.size() ); }
+                                    nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
                                     var1 = "";
 
                                     state = 4;
@@ -226,7 +226,7 @@ namespace ClauTextSharp.load_data
                             {
                                 // var1
                                 var1 = Utility.Pop(strVec);
-                                nestedUT.get(braceNum).AddItem("", var1);
+                                nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
                                 var1 = "";
 
                                 state = 4;
@@ -270,9 +270,9 @@ namespace ClauTextSharp.load_data
 
                             ///
                             {
-                                nestedUT.get(braceNum).AddUserTypeItem(new UserType(var2));
+                                nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2.Clone()));
                                 UserType pTemp = new UserType();
-                                nestedUT.get(braceNum).GetLastUserTypeItemRef(var2, pTemp);
+                                nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2.Clone(), ref pTemp);
                                 var2 = "";
                                 braceNum++;
 
@@ -290,7 +290,7 @@ namespace ClauTextSharp.load_data
                         {
                             val = Utility.Pop(strVec);
 
-                            nestedUT.get(braceNum).AddItem(var2, val);
+                            nestedUT.get(braceNum).AddItem((String)var2.Clone(), (String)val.Clone());
                             var2 = ""; val = "";
                             if (strVec.empty())
                             {
@@ -377,7 +377,8 @@ namespace ClauTextSharp.load_data
             }
             if (state != 0)
             {
-                throw new Exception("error final state is not 0!");
+                Console.WriteLine("strVec.size() " + strVec.size());
+                throw new Exception("error final state is not 0! : state - " + state);
             }
             if (braceNum != 0)
             {
@@ -387,20 +388,23 @@ namespace ClauTextSharp.load_data
             return true;
         }
 
-        public static bool LoadDataFromFile(String fileName, UserType global) /// global should be empty
+        public static bool LoadDataFromFile(String fileName, ref UserType global) /// global should be empty
 		{
-            FileStream inFile = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            StreamReader sr = new StreamReader(inFile);
-            UserType globalTemp = global;
-            ArrayQueue<String> strVec = new ArrayQueue<String>();
-
+            UserType globalTemp = new UserType(global);
+            FileStream inFile = null;
             try
             {
+                inFile = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                StreamReader sr = new StreamReader(inFile);
+            
+                ArrayQueue<String> strVec = new ArrayQueue<String>();
+
+         
                 InFileReserver ifReserver = new InFileReserver(sr);
 
                 ifReserver.SetNum(100000);
                 // cf) empty file..
-                if (false == _LoadData(strVec, (Reserver)ifReserver, globalTemp))
+                if (false == _LoadData(strVec, (Reserver)ifReserver, ref globalTemp))
                 {
                     return true;
                 }
@@ -409,15 +413,15 @@ namespace ClauTextSharp.load_data
 
                 inFile.Close();
             }
-            catch (Exception e) { Console.WriteLine(e.ToString()); inFile.Close(); return false; }
+            catch (Exception e) { Console.WriteLine(e.ToString()); if (null != inFile) { inFile.Close(); } return false; }
 
             global = globalTemp;
             return true;
         }
 
-        public static bool LoadDataFromString(String str, UserType ut)
+        public static bool LoadDataFromString(String str, ref UserType ut)
         {
-            UserType utTemp = ut;
+            UserType utTemp = new UserType(ut);
 
             bool chk = Utility.ChkExist(str);
             if (chk)
@@ -442,7 +446,7 @@ namespace ClauTextSharp.load_data
             {
                 // empty String!
                 NoneReserver nonReserver = new NoneReserver();
-                if (false == _LoadData(strVec, (Reserver)nonReserver, utTemp))
+                if (false == _LoadData(strVec, (Reserver)nonReserver, ref utTemp))
                 {
                     return true;
                 }
@@ -650,7 +654,7 @@ namespace ClauTextSharp.load_data
             UserType utTemp = new UserType("global");
             bool isTrue = false;
 
-            if (false == LoadDataFromString(data, utTemp))
+            if (false == LoadDataFromString(data, ref utTemp))
             {
                 return false;
             }
@@ -704,7 +708,7 @@ namespace ClauTextSharp.load_data
             UserType utTemp = new UserType("global");
             bool isTrue = false;
 
-            if (false == LoadDataFromString(data, utTemp))
+            if (false == LoadDataFromString(data, ref utTemp))
             {
                 return false;
             }
@@ -758,7 +762,7 @@ namespace ClauTextSharp.load_data
             UserType utTemp = new UserType("");
             bool isTrue = false;
 
-            if (false == LoadDataFromString(data, utTemp))
+            if (false == LoadDataFromString(data, ref utTemp))
             {
                 return false;
             }
@@ -806,7 +810,7 @@ namespace ClauTextSharp.load_data
                 if (temp == "") { temp = " "; }
                 StringTokenizer tokenizer = new StringTokenizer(temp, "/");
                 UserType utTemp = new UserType("");
-                if (false == LoadDataFromString(data, utTemp))
+                if (false == LoadDataFromString(data, ref utTemp))
                 {
                     return false;
                 }
@@ -908,7 +912,7 @@ namespace ClauTextSharp.load_data
                 if (temp == "") { temp = " "; }
                 StringTokenizer tokenizer = new StringTokenizer(temp, "/");
                 UserType utTemp = new UserType("");
-                if (false == LoadDataFromString(data, utTemp))
+                if (false == LoadDataFromString(data, ref utTemp))
                 {
                     return false;
                 }
@@ -1028,11 +1032,14 @@ namespace ClauTextSharp.load_data
             if (finded.first)
             {
                 UserType utTemp = new UserType("");
-                if (false == LoadDataFromString(data, utTemp))
+                if (false == LoadDataFromString(data, ref utTemp))
                 {
                     return false;
                 }
                 long a = 0, b = 0, Min = 0, Max = 0;
+
+                Min = min(a, b);
+                Max = max(a, b);
 
                 for (long x = Min; x <= Max; ++x)
                 {
@@ -1417,7 +1424,7 @@ namespace ClauTextSharp.load_data
             UserType globalTemp = new UserType("global");
 
             // Scan + Parse 
-            if (false == LoadDataFromFile(fileName, globalTemp)) { return false; }
+            if (false == LoadDataFromFile(fileName, ref globalTemp)) { return false; }
             Console.WriteLine("load end : " + fileName);
             global = globalTemp;
             return true;
@@ -1449,6 +1456,7 @@ namespace ClauTextSharp.load_data
                 else if (option == "2")
                     global.Save2(sw);
 
+                sw.Flush();
                 outFile.Close();
             }
             catch( Exception e ) { Console.WriteLine(e.ToString()); return false; }

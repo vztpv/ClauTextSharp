@@ -18,14 +18,15 @@ namespace ClauTextSharp.wiz
             int right = 0;
 
             _m_exist = false;
-
-            for (int i = 0; i < str.Count(); ++i) {
+            int count = str.Count();
+            for (int i = 0; i < count; ++i) {
                 right = i;
                 int _select = -1;
                 bool pass = false;
 
                 for (int j = 0; j < separator.size(); ++j) {
-                    for (int k = 0; k < separator.get(j).Count(); ++k) {
+                    int sep_count = separator.get(j).Count();
+                    for (int k = 0; k < sep_count; ++k) {
                         if (str[i] == separator.get(j)[k]) {
                             pass = true;
                         }
@@ -49,7 +50,7 @@ namespace ClauTextSharp.wiz
                     left = i + 1;
                     right = left;
                 }
-                else if (!pass && i == str.Count() - 1) {
+                else if (!pass && i == count - 1) {
                     String temp = str.Substring(left, right - left + 1);
                     if (temp.Count() != 0) {
                         _m_str.push_back(temp);

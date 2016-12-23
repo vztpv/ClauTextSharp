@@ -34,7 +34,7 @@ namespace ClauTextSharp.load_data
         private Vector<UserType> userTypeList;
         private UserType parent;
 
-        // ructor.
+        // constructor.
         public UserType(String name = "") : base(name)
         {
             ilist = new Vector<int>();
@@ -47,12 +47,14 @@ namespace ClauTextSharp.load_data
         {
             Reset(other);
         }
+        // chk!!
         private void Reset(UserType other)
         {
-            ilist = other.ilist;
-            itemList = other.itemList;
+            ilist = new Vector<int>(other.ilist);
+            itemList = new Vector<ItemType<String>>(other.itemList);
             parent = other.parent;
 
+            userTypeList = new Vector<UserType>();
             for (int i = 0; i < other.userTypeList.size(); i++)
             {
                 userTypeList.push_back(new UserType(other.userTypeList.get(i)));
@@ -483,7 +485,7 @@ namespace ClauTextSharp.load_data
 
 			return temp;
 		}
-        public bool GetLastUserTypeItemRef(String name, UserType refUT)
+        public bool GetLastUserTypeItemRef(String name, ref UserType refUT)
         {
             int idx = -1;
 
