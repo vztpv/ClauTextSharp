@@ -7,11 +7,9 @@ namespace ClauTextSharp.wiz
     {
         public static bool Comp(String str, int start, String changed_str, int changed_str_len)
         {
-            int first = start;
-
-            for (int i = first; i < changed_str_len; ++i)
+            for (int i = 0; i < changed_str_len; ++i)
             {
-                if (str[i] != changed_str[i])
+                if (str[start + i] != changed_str[i])
                 {
                     return false;
                 }

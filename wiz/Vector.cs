@@ -7,6 +7,7 @@ namespace ClauTextSharp.wiz
     public class Vector<T>
     {
         private List<T> arr;
+        private int num;
 
         public Vector(int size)
         {
@@ -17,23 +18,30 @@ namespace ClauTextSharp.wiz
             {
                 arr.Add(default(T));
             }
+
+            num = size;
         }
         public Vector()
         {
             arr = new List<T>();
+            num = 0;
         }
         public Vector(List<T> other)
         {
+            int size = other.Count;
+            num = 0;
             arr = new List<T>();
 
-            for( int i=0; i < other.Count; ++i)
+            for( int i=0; i < size; ++i)
             {
-                arr.Add(other[i]);
+                this.push_back(other[i]);
             }
         }
-        // deep copy?
+
         public Vector(Vector<T> other)
         {
+            num = other.size();
+
             arr = new List<T>(other.arr);
         }
 
@@ -41,6 +49,7 @@ namespace ClauTextSharp.wiz
         public void push_back(T val)
         {
             arr.Add(val); //
+            num++;
         }
         public T back()
         {
@@ -48,23 +57,26 @@ namespace ClauTextSharp.wiz
         }
         public void pop_back()
         {
-            arr.RemoveAt(arr.Count - 1);
+            arr.RemoveAt(num - 1);
+            num--;
         }
 
         public void clear()
         {
             arr.Clear();
+            num = 0;
         }
         // [] ?
         public void set(int idx, T val) { arr[idx] = val; } //
         public T get(int idx) { return arr[idx];  } //
 
-        public int size() { return arr.Count; }
-        public bool empty() { return arr.Count == 0; }
+        public int size() { return this.num; }
+        public bool empty() { return this.num == 0; }
 
         public void insert(int idx, T val)
         {
             arr.Insert(idx, val);
+            num++;
         }
         public void reverse() // chk!
         {

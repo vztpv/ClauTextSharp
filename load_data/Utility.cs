@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using System.IO;
 using System.Threading;
+using System.Text;
 
 using ClauTextSharp.wiz;
 
@@ -13,7 +14,7 @@ namespace ClauTextSharp.load_data
         // need reanme?, // for speed up?
         public readonly static String[] specialStr =  { "^",   " ",    "\t",   "\r",   "\n",   "#"  };
         public readonly static String[] specialStr2 = { "^0",  "^1",   "^2",   "^3",   "^4",   "^5" };
-        public readonly static Vector<String> reverse_specialStr = new Vector<String>(new List<String> { "#", "\n", "r", "\t", " ", "^" });
+        public readonly static Vector<String> reverse_specialStr = new Vector<String>(new List<String> { "#", "\n", "\r", "\t", " ", "^" });
         public readonly static Vector<String> reverse_specialStr2 = new Vector<String>(new List<String> { "^5", "^4", "^3", "^2", "^1", "^0" });
         public readonly static Vector<String> beforeWhitespaceVec = new Vector<String>(new List<String> { " ", "\t", "\r", "\n" });
         public readonly static Vector<String> afterWhitespaceVec = new Vector<String>(new List<String> { "^1", "^2", "^3", "^4" });
@@ -288,8 +289,7 @@ namespace ClauTextSharp.load_data
             public ArrayQueue<String> aq;
             public int strVecStart;
             public int strVecEnd;
-
-            public DoThreadData() {  }
+            public DoThreadData() { }
             public DoThreadData(DoThreadData other)
             {
                 strVec = other.strVec;
@@ -298,17 +298,20 @@ namespace ClauTextSharp.load_data
                 strVecEnd = other.strVecEnd;
             }
         }
-        private static void DoThread(object param) // need to rename!
+        
+        private static bool DoThread(object param) // need to rename!
         {
             DoThreadData data = (DoThreadData)param;
+            StringTokenizer tokenizer = new StringTokenizer();
             for (int i = data.strVecStart; i <= data.strVecEnd; ++i)
             {
-                StringTokenizer tokenizer = new StringTokenizer(data.strVec.get(i));
+                tokenizer.init(data.strVec.get(i));
                 while (tokenizer.hasMoreTokens()) {
                     String temp = tokenizer.nextToken();
                     data.aq.push(temp);
                 }
             }
+            return true;
 		}
 
         private class DoThreadData2 // need to rename!
@@ -317,7 +320,8 @@ namespace ClauTextSharp.load_data
             public int strVecStart;
             public int strVecEnd;
 
-            public DoThreadData2() {  }
+            public DoThreadData2() { }
+
             public DoThreadData2(DoThreadData2 other)
             {
                 strVec = other.strVec;
@@ -326,7 +330,7 @@ namespace ClauTextSharp.load_data
             }
         }
 
-        private static void DoThread2(object val) {
+        private static bool DoThread2(object val) {
             DoThreadData2 data = new DoThreadData2((DoThreadData2)val);
 
 			for (int i = data.strVecStart; i <= data.strVecEnd; ++i)
@@ -344,6 +348,7 @@ namespace ClauTextSharp.load_data
 					data.strVec.set(i, ChangeStr(data.strVec.get(i), beforeWhitespaceVec, afterWhitespaceVec));
 				}
 			}
+            return true;
         }
 		        
         public static bool ChkExist(String str) /// has bug?, unstatble?
@@ -377,9 +382,17 @@ namespace ClauTextSharp.load_data
             int count = 0;
             String temp = "";
             Vector<String> strVecTemp = new Vector<String>();
-            ArrayQueue<String>[] arrayQueue = new ArrayQueue<String>[4];
 
-            for( int i=0; i < 4; ++i)
+            int thread_num = 8;
+
+            Func<Object, bool> work = DoThread;
+            Func<Object, bool> work2 = DoThread2;
+            Vector<IAsyncResult> asyncRes = new Vector<IAsyncResult>(thread_num);
+            Vector<IAsyncResult> asyncRes2 = new Vector<IAsyncResult>(thread_num);
+
+            ArrayQueue<String>[] arrayQueue = new ArrayQueue<String>[thread_num];
+            
+            for( int i=0; i < thread_num; ++i)
             {
                 arrayQueue[i] = new ArrayQueue<String>();
             }
@@ -395,34 +408,29 @@ namespace ClauTextSharp.load_data
             if (count >= 100)
             {
                 DoThreadData2 param = new DoThreadData2();
-                Thread threadA, threadB, threadC, threadD;
+                //Thread[] thread = new Thread[thread_num];
                 param.strVec = strVecTemp;
 
-                param.strVecStart = 0;
-                param.strVecEnd = count / 4 - 1;
+                for (int i = 0; i < thread_num-1; ++i)
+                {
+                    param.strVecStart = (count / thread_num) * i;
+                    param.strVecEnd = (count / thread_num) * (i + 1) - 1;
 
-                threadA = new Thread(DoThread2);
-                threadA.Start(new DoThreadData2(param));
-
-                param.strVecStart = count / 4;
-                param.strVecEnd = (count / 4) * 2 - 1;
-                threadB = new Thread(DoThread2);
-                threadB.Start(new DoThreadData2(param));
-
-                param.strVecStart = (count / 4) * 2;
-                param.strVecEnd = (count / 4) * 3 - 1;
-                threadC = new Thread(DoThread2);
-                threadC.Start(new DoThreadData2(param));
-
-                param.strVecStart = (count / 4) * 3;
+                    asyncRes2.set(i, work2.BeginInvoke((object)new DoThreadData2(param), null, null));
+                    // thread[i] = new Thread(DoThread2);
+                    // thread[i].Start(new DoThreadData2(param));
+                }
+                param.strVecStart = (count / thread_num) * ( thread_num -1 );
                 param.strVecEnd = count - 1;
-                threadD = new Thread(DoThread2);
-                threadD.Start(new DoThreadData2(param));
+                // thread[thread_num-1] = new Thread(DoThread2);
+                // thread[thread_num-1].Start(new DoThreadData2(param));
 
-                threadA.Join();
-                threadB.Join();
-                threadC.Join();
-                threadD.Join();
+                asyncRes2.set(thread_num-1, work2.BeginInvoke((object)new DoThreadData2(param), null, null));
+                
+                for (int i = 0; i < thread_num; ++i)
+                {
+                    work2.EndInvoke(asyncRes2.get(i));
+                }
             }
             else if (count > 0)
             {
@@ -431,46 +439,40 @@ namespace ClauTextSharp.load_data
                 param.strVecStart = 0;
                 param.strVecEnd = count - 1;
 
-                DoThread2(param);
+                DoThread2(new DoThreadData2(param));
             }
 
             if (count >= 100)
             {
                 DoThreadData param = new DoThreadData();
-                Thread threadA, threadB, threadC, threadD;
+                Thread[] thread = new Thread[thread_num];
+
                 param.strVec = strVecTemp;
-                param.aq = arrayQueue[0];
 
-                param.strVecStart = 0;
-                param.strVecEnd = count / 4 - 1;
+                for (int i = 0; i < thread_num-1; ++i)
+                {
+                    param.aq = arrayQueue[i];
+                    param.strVecStart = (count / thread_num) * i;
+                    param.strVecEnd = (count / thread_num) * (i + 1) - 1;
+                    //thread[i] = new Thread(DoThread);
+                    // thread[i].Start(new DoThreadData(param));
 
-                threadA = new Thread(DoThread);
-                threadA.Start(new DoThreadData(param));
-
-                param.aq = arrayQueue[1];
-                param.strVecStart = count / 4;
-                param.strVecEnd = (count / 4) * 2 - 1;
-                threadB = new Thread(DoThread);
-                threadB.Start(new DoThreadData(param));
-
-                param.aq = arrayQueue[2];
-                param.strVecStart = (count / 4) * 2;
-                param.strVecEnd = (count / 4) * 3 - 1;
-                threadC = new Thread(DoThread);
-                threadC.Start(new DoThreadData(param));
-
-                param.aq = arrayQueue[3];
-                param.strVecStart = (count / 4) * 3;
+                    asyncRes.set(i, work.BeginInvoke((object)new DoThreadData(param), null, null));
+                }
+                param.aq = arrayQueue[thread_num-1];
+                param.strVecStart = (count / thread_num) * (thread_num - 1);
                 param.strVecEnd = count - 1;
-                threadD = new Thread(DoThread);
-                threadD.Start(new DoThreadData(param));
+                //thread[thread_num-1] = new Thread(DoThread);
+                // thread[thread_num-1].Start(new DoThreadData(param));
 
-                threadA.Join();
-                threadB.Join();
-                threadC.Join();
-                threadD.Join();
+                asyncRes.set(thread_num - 1, work.BeginInvoke((object)new DoThreadData(param), null, null));
 
-                for (int i = 0; i < 4; ++i)
+                for (int i = 0; i < thread_num; ++i)
+                {
+                    work.EndInvoke(asyncRes.get(i));
+                }
+
+                for (int i = 0; i < thread_num; ++i)
                 {
                     aq.push(arrayQueue[i]);
                 }
@@ -483,7 +485,7 @@ namespace ClauTextSharp.load_data
                 param.strVecStart = 0;
                 param.strVecEnd = count - 1;
 
-                DoThread(param);
+                DoThread(new DoThreadData(param));
             }
 
             return new Pair<bool, int>(count > 0, count);
@@ -545,42 +547,42 @@ namespace ClauTextSharp.load_data
 		// AddSpace : return String
 		public static String AddSpace(String str)
         {
-            String temp = "";
+            StringBuilder temp = new StringBuilder();
 
             for (int i = 0; i < str.Length; ++i)
             {
                 /// To Do - chabnge to switch statement.
                 if ('=' == str[i])
                 {
-                    temp = temp + " ";
-                    temp = temp + "=";
-                    temp = temp + " ";
+                    temp.Append(" ");
+                    temp.Append("=");
+                    temp.Append(" ");
                 }
                 else if ('{' == str[i])
                 {
-                    temp = temp + " ";
-                    temp = temp + "{";
-                    temp = temp + " ";
+                    temp.Append(" ");
+                    temp.Append("{");
+                    temp.Append(" ");
                 }
                 else if ('}' == str[i])
                 {
-                    temp = temp + " ";
-                    temp = temp + "}";
-                    temp = temp + " ";
+                    temp.Append(" ");
+                    temp.Append("}");
+                    temp.Append(" ");
                 }
                 else
                 {
-                    temp = temp + str[i];
+                    temp.Append(str[i]);
                 }
             }
 
-            return temp;
+            return temp.ToString();
         }
 
         /// need testing!
         public static String PassSharp(String str)
         {
-            String temp = "";
+            StringBuilder temp = new StringBuilder();
             int state = 0;
 
             for (int i = 0; i < str.Length; ++i)
@@ -590,33 +592,33 @@ namespace ClauTextSharp.load_data
 
                 if (0 == state)
                 {
-                    temp = temp + str[i];
+                    temp.Append(str[i]);
                 }
             }
-            return temp;
+            return temp.ToString();
         }
 
 
-        private static bool _ChangeStr(String str, Vector<String> changed_str, Vector<String> result_str, ref int i, ref int state, String temp)
+        private static bool _ChangeStr(String str, Vector<String> changed_str, Vector<String> result_str, ref int i, ref int state, ref StringBuilder temp)
         {
             for (int j = 0; j < changed_str.size(); ++j)
             {
                 if (StringUtility.Comp(str, i, changed_str.get(j), changed_str.get(j).Length))
                 {
                     state = 1;
-                    temp = temp + result_str.get(j);
+                    temp.Append(result_str.get(j));
                     i = i + changed_str.get(j).Length - 1;
                     return true;
                 }
             }
             return false;
         }
-        private static bool _ChangeStr(String str, String changed_str, String result_str, ref int i, ref int state, String temp)
+        private static bool _ChangeStr(String str, String changed_str, String result_str, ref int i, ref int state, ref StringBuilder temp)
         {
             if (StringUtility.Comp(str, i, changed_str, changed_str.Length))
             {
                 state = 1;
-                temp = temp + result_str;
+                temp.Append(result_str);
                 i = i + changed_str.Length - 1;
                 return true;
             }
@@ -626,7 +628,7 @@ namespace ClauTextSharp.load_data
         // 길이가 긴 문자열이 먼저 나와야 한다?
         public static String ChangeStr(String str, String changed_str, String result_str)
         {
-            String temp = "";
+            StringBuilder temp = new StringBuilder();
             int state = 0;
 
 
@@ -635,33 +637,37 @@ namespace ClauTextSharp.load_data
                 if (0 == state && i == 0 && '\"' == str[i])
                 {
                     state = 1;
-                    temp = temp + str[i];
+
+                    temp.Append(str[i]);
                 }
                 else if (0 == state && i > 0 && '\"' == str[i] && '\\' != str[i - 1])
                 {
                     state = 1;
-                    temp = temp + str[i];
+
+                    temp.Append(str[i]);
                 }
-                else if (1 == state && _ChangeStr(str, changed_str, result_str, ref i, ref state, temp))
+                else if (1 == state && _ChangeStr(str, changed_str, result_str, ref i, ref state, ref temp))
                 {
                     //
                 }
                 else if ((1 == state && i > 0 && '\\' != str[i - 1] && '\"' == str[i]))
                 {
                     state = 0;
-                    temp = temp + '\"';
+
+                    temp.Append('\"');
                 }
                 else
                 {
-                    temp = temp + str[i];
+
+                    temp.Append(str[i]);
                 }
             }
 
-            return temp;
+            return temp.ToString();
         }
         public static String ChangeStr(String str, Vector<String> changed_str, Vector<String> result_str)
         {
-            String temp = "";
+            StringBuilder temp = new StringBuilder();
             int state = 0;
 
 
@@ -670,29 +676,29 @@ namespace ClauTextSharp.load_data
                 if (0 == state && i == 0 && '\"' == str[i])
                 {
                     state = 1;
-                    temp = temp + str[i];
+                    temp.Append(str[i]);
                 }
                 else if (0 == state && i > 0 && '\"' == str[i] && '\\' != str[i - 1])
                 {
                     state = 1;
-                    temp = temp + str[i];
-                 }
-                else if (1 == state && _ChangeStr(str, changed_str, result_str, ref i, ref state, temp))
+                    temp.Append(str[i]);
+                }
+                else if (1 == state && _ChangeStr(str, changed_str, result_str, ref i, ref state, ref temp))
                 {
                     //
                 }
                 else if ((1 == state && i > 0 && '\\' != str[i - 1] && '\"' == str[i]))
                 {
                     state = 0;
-                    temp = temp + '\"';
+                    temp.Append('\"');
                 }
                 else
                 {
-                    temp = temp + str[i];
+                    temp.Append(str[i]);
                 }
             }
 
-            return temp;
+            return temp.ToString();
         }
 
     }

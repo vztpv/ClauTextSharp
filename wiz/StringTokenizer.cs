@@ -6,26 +6,38 @@ namespace ClauTextSharp.wiz
 {
     public class StringTokenizer
     {
-        private Vector<String> _m_str;
+        private Vector<String> _m_str = new Vector<String>();
         private int _m_count;
         private bool _m_exist;
+        Vector<String> whitespaceVec = new Vector<String>();
 
-        private void Init(String str, Vector<String> separator) // assumtion : separators are sorted by length?, long . short
+        public bool init(String str)
         {
-            if (separator.empty() || str.Count() == 0) { return; } // if str.empty() == false then _m_str.push_back(str); // ?
+            return init(str, whitespaceVec);
+        }
+        public bool init(String str, Vector<String> separator) // assumtion : separators are sorted by length?, long . short
+        {
+            { // reset..
+                _m_str.clear();
+                _m_count = 0;
+                _m_exist = false;
+            }
 
+            if (separator.empty() || str.Length == 0) { return false; } // if str.empty() == false then _m_str.push_back(str); // ?
+
+            
             int left = 0;
             int right = 0;
 
             _m_exist = false;
-            int count = str.Count();
+            int count = str.Length;
             for (int i = 0; i < count; ++i) {
                 right = i;
                 int _select = -1;
                 bool pass = false;
 
                 for (int j = 0; j < separator.size(); ++j) {
-                    int sep_count = separator.get(j).Count();
+                    int sep_count = separator.get(j).Length;
                     for (int k = 0; k < sep_count; ++k) {
                         if (str[i] == separator.get(j)[k]) {
                             pass = true;
@@ -43,10 +55,10 @@ namespace ClauTextSharp.wiz
 
                     String temp = str.Substring(left, right - 1 - left + 1);
 
-                    if (temp.Count() != 0) {
+                    if (temp.Length != 0) {
                         _m_str.push_back(temp);
                     }
-                    i = i + separator.get(_select).Count() - 1;
+                    i = i + separator.get(_select).Length - 1;
                     left = i + 1;
                     right = left;
                 }
@@ -57,41 +69,56 @@ namespace ClauTextSharp.wiz
                     }
                 }
             }
+
+            return true;
         }
 		
-        public StringTokenizer() { _m_count = 0; _m_exist = false; _m_str = new Vector<String>(); }
+        public StringTokenizer()
+        {
+            _m_count = 0; _m_exist = false;
+            whitespaceVec.push_back(" ");
+            whitespaceVec.push_back("\t");
+            whitespaceVec.push_back("\r");
+            whitespaceVec.push_back("\n");
+        }
         public StringTokenizer(String str, String separator)
         {
-            _m_str = new Vector<String>();
+            whitespaceVec.push_back(" ");
+            whitespaceVec.push_back("\t");
+            whitespaceVec.push_back("\r");
+            whitespaceVec.push_back("\n");
+            
             _m_count = 0;
             _m_exist = false;
 
             Vector<String> vec = new Vector<String>();
             vec.push_back(separator);
-            Init(str, vec);
+            init(str, vec);
         }
         public StringTokenizer(String str, Vector<String> separator)
         {
-            _m_str = new Vector<String>();
+            whitespaceVec.push_back(" ");
+            whitespaceVec.push_back("\t");
+            whitespaceVec.push_back("\r");
+            whitespaceVec.push_back("\n");
+            
             _m_count = 0;
             _m_exist = false;
 
-            Init(str, separator);
+            init(str, separator);
         }
         public StringTokenizer(String str)
         {
+            whitespaceVec.push_back(" ");
+            whitespaceVec.push_back("\t");
+            whitespaceVec.push_back("\r");
+            whitespaceVec.push_back("\n");
+
             _m_str = new Vector<String>();
             _m_count = 0;
             _m_exist = false;
 
-            Vector<String> vec = new Vector<String>();
-
-            vec.push_back(" ");
-            vec.push_back("\t");
-            vec.push_back("\r");
-            vec.push_back("\n");
-
-            Init(str, vec);
+            init(str, whitespaceVec);
         }
         public int countTokens()
         {
@@ -110,7 +137,7 @@ namespace ClauTextSharp.wiz
         }
         public bool hasMoreTokens()
         {
-            return _m_count<_m_str.size();
+            return _m_count < _m_str.size();
         }
 
         public bool isFindExist()

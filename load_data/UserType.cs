@@ -18,6 +18,23 @@ namespace ClauTextSharp.load_data
             public Vector<String> result_ch;
             public int utVecStart;
             public int utVecEnd;
+
+            public DoThreadData()
+            {
+                utVec = new Vector<UserType>();
+                target_ch = new Vector<String>();
+                result_ch = new Vector<String>();
+                utVecStart = -1;
+                utVecEnd = -1;
+            }
+            public DoThreadData(DoThreadData other)
+            {
+                utVec = other.utVec;
+                target_ch = other.target_ch;
+                result_ch = other.result_ch;
+                utVecStart = other.utVecStart;
+                utVecEnd = other.utVecEnd;
+            }
         }
         private static void DoThread(Object val)
         {
@@ -50,14 +67,14 @@ namespace ClauTextSharp.load_data
         // chk!!
         private void Reset(UserType other)
         {
-            ilist = new Vector<int>(other.ilist);
-            itemList = new Vector<ItemType<String>>(other.itemList);
+            ilist = (other.ilist);
+            itemList = (other.itemList);
             parent = other.parent;
 
             userTypeList = new Vector<UserType>();
             for (int i = 0; i < other.userTypeList.size(); i++)
             {
-                userTypeList.push_back(new UserType(other.userTypeList.get(i)));
+                userTypeList.push_back((other.userTypeList.get(i)));
             }
         }
         //
@@ -754,16 +771,16 @@ namespace ClauTextSharp.load_data
                 param.utVec = temp.userTypeList;
 
                 param.utVecStart = 0; param.utVecEnd = count / 4 - 1;
-                threadA.Start(param);
+                threadA.Start(new DoThreadData(param));
 
                 param.utVecStart = count / 4; param.utVecEnd = (count / 4) * 2 - 1;
-                threadB.Start(param);
+                threadB.Start(new DoThreadData(param));
 
                 param.utVecStart = (count / 4) * 2; param.utVecEnd = (count / 4) * 3 - 1;
-                threadC.Start(param);
+                threadC.Start(new DoThreadData(param));
 
                 param.utVecStart = (count / 4) * 3; param.utVecEnd = count - 1;
-                threadD.Start(param);
+                threadD.Start(new DoThreadData(param));
 
                 threadA.Join();
                 threadB.Join();

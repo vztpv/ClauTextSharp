@@ -35,17 +35,19 @@ namespace ClauTextSharp.wiz
         }
         private void expand()
         {
-            for( int i=0; i < capacity; ++i)
+            // expand array queue.
+            ArrayQueue<T> temp = new ArrayQueue<T>(capacity * 2);
+            //
+            for (int i = 0; i < capacity; ++i)
             {
-                arr.Add(arr[i]);
+                temp.set(i, arr[(start + i) & (capacity - 1)]);
             }
-            
-            for ( int i=0; i < capacity; ++i)
-            {
-                arr[i] = arr[capacity + ( (start + i) & (capacity - 1) )];
-            }
-            capacity = capacity * 2;
-            start = 0;
+            temp.start = 0;
+            temp.num = size();
+            this.num = temp.num;
+            this.arr = temp.arr;
+            this.start = temp.start;
+            this.capacity = temp.capacity;
         }
         public void push(ArrayQueue<T> other) // chk!!
         {

@@ -81,14 +81,14 @@ namespace ClauTextSharp.load_data
                                 else
                                 {
                                     var1 = Utility.Pop(strVec);
-                                    nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
+                                    nestedUT.get(braceNum).AddItem("", (String)var1);
                                     state = 0;
                                 }
                             }
                             else
                             {
                                 var1 = Utility.Pop(strVec);
-                                nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
+                                nestedUT.get(braceNum).AddItem("", (String)var1);
                                 state = 0;
                             }
                         }
@@ -111,9 +111,9 @@ namespace ClauTextSharp.load_data
                             Utility.Pop(strVec);
 
                             ///
-                            nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2.Clone()));
+                            nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2));
                             UserType pTemp = new UserType();
-                            nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2.Clone(), ref pTemp);
+                            nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2, ref pTemp);
 
                             braceNum++;
 
@@ -130,7 +130,7 @@ namespace ClauTextSharp.load_data
                         {
                             val = Utility.Pop(strVec);
 
-                            nestedUT.get(braceNum).AddItem((String)var2.Clone(), (String)val.Clone());
+                            nestedUT.get(braceNum).AddItem((String)var2, (String)val);
                             var2 = "";
                             val = "";
 
@@ -215,8 +215,7 @@ namespace ClauTextSharp.load_data
                                 {
                                     // var1
                                     var1 = Utility.Pop(strVec);
-                                    if( var1 == null ) { Console.WriteLine("ERror : " + strVec.size() ); }
-                                    nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
+                                    nestedUT.get(braceNum).AddItem("", (String)var1);
                                     var1 = "";
 
                                     state = 4;
@@ -226,7 +225,7 @@ namespace ClauTextSharp.load_data
                             {
                                 // var1
                                 var1 = Utility.Pop(strVec);
-                                nestedUT.get(braceNum).AddItem("", (String)var1.Clone());
+                                nestedUT.get(braceNum).AddItem("", (String)var1);
                                 var1 = "";
 
                                 state = 4;
@@ -270,9 +269,9 @@ namespace ClauTextSharp.load_data
 
                             ///
                             {
-                                nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2.Clone()));
+                                nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2));
                                 UserType pTemp = new UserType();
-                                nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2.Clone(), ref pTemp);
+                                nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2, ref pTemp);
                                 var2 = "";
                                 braceNum++;
 
@@ -290,7 +289,7 @@ namespace ClauTextSharp.load_data
                         {
                             val = Utility.Pop(strVec);
 
-                            nestedUT.get(braceNum).AddItem((String)var2.Clone(), (String)val.Clone());
+                            nestedUT.get(braceNum).AddItem((String)var2, (String)val);
                             var2 = ""; val = "";
                             if (strVec.empty())
                             {
@@ -410,7 +409,7 @@ namespace ClauTextSharp.load_data
                 }
 
                 UserType.ReplaceAll(globalTemp, Utility.reverse_specialStr2, Utility.reverse_specialStr);
-
+                sr.Close();
                 inFile.Close();
             }
             catch (Exception e) { Console.WriteLine(e.ToString()); if (null != inFile) { inFile.Close(); } return false; }
@@ -426,8 +425,8 @@ namespace ClauTextSharp.load_data
             bool chk = Utility.ChkExist(str);
             if (chk)
             {
-                str = Utility.ChangeStr(str, Utility.specialStr[0], Utility.specialStr[0]);//{ "^" }, { "^0" });
-                str = Utility.ChangeStr(str, Utility.specialStr[5], Utility.specialStr[5]);//{ "#" }, { "^5" });
+                str = Utility.ChangeStr(str, Utility.specialStr[0], Utility.specialStr2[0]);//{ "^" }, { "^0" });
+                str = Utility.ChangeStr(str, Utility.specialStr[5], Utility.specialStr2[5]);//{ "#" }, { "^5" });
             }
             str = Utility.PassSharp(str);
             str = Utility.AddSpace(str);
@@ -1430,13 +1429,12 @@ namespace ClauTextSharp.load_data
             return true;
         }
         // SaveQuery
-        public static bool SaveWizDB(UserType global, String fileName, String option = "0", String option2 = "")
+        public static bool SaveWizDB(UserType global, String fileName, String option = "1", String option2 = "")
         { /// , int option
+            FileStream outFile=null;
+            StreamWriter sw=null;
             try
             {
-                FileStream outFile;
-                StreamWriter sw;
-
                 if (option2 == "")
                 {
                     outFile = new FileStream(fileName, FileMode.Create, FileAccess.Write);
@@ -1459,7 +1457,7 @@ namespace ClauTextSharp.load_data
                 sw.Flush();
                 outFile.Close();
             }
-            catch( Exception e ) { Console.WriteLine(e.ToString()); return false; }
+            catch( Exception e ) { Console.WriteLine(e.ToString()); if (null != outFile) { outFile.Close(); } return false; }
             return true;
         }
 
