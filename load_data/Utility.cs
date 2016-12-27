@@ -253,43 +253,22 @@ namespace ClauTextSharp.load_data
         {
             return ch == ' ' || ch == '\t' || ch == '\t' || ch == '\n';
         }
-
-        public static Pair<bool, bool> PassSharp(FileStream inFile, ArrayQueue<String> strVec)
-        {
-            String temp;
-            StreamReader sr = new StreamReader(inFile);
-            bool chk = sr.EndOfStream;
-            temp = sr.ReadLine();
-            sr = null;
-
-            if (false == chk)
-            {
-                StringTokenizer tokenizer = new StringTokenizer(temp, "#");
-
-                if (tokenizer.countTokens() == 1 && tokenizer.isFindExist())
-                {
-                    //
-                }
-                else if (tokenizer.countTokens() >= 1)
-                {
-                    temp = tokenizer.nextToken();
-                    if (temp.Length != 0)
-                    {
-                        strVec.push(temp);
-                        return new Pair<bool, bool>(true, true);
-                    }
-                }
-            }
-            return new Pair<bool, bool>(chk, false);
-        }
+        
 
         private class DoThreadData // need to rename!
         {
             public Vector<String> strVec;
-            public ArrayQueue<String> aq;
+            public MovableDeck<String> aq;
             public int strVecStart;
             public int strVecEnd;
-            public DoThreadData() { }
+            public DoThreadData()
+            {
+                strVec = new Vector<String>();
+                aq = new MovableDeck<String>();
+
+                strVecStart = -1;
+                strVecEnd = -1;
+            }
             public DoThreadData(DoThreadData other)
             {
                 strVec = other.strVec;
@@ -301,16 +280,20 @@ namespace ClauTextSharp.load_data
         
         private static bool DoThread(object param) // need to rename!
         {
+            
             DoThreadData data = (DoThreadData)param;
             StringTokenizer tokenizer = new StringTokenizer();
+
             for (int i = data.strVecStart; i <= data.strVecEnd; ++i)
             {
                 tokenizer.init(data.strVec.get(i));
+           
                 while (tokenizer.hasMoreTokens()) {
                     String temp = tokenizer.nextToken();
-                    data.aq.push(temp);
-                }
+                    data.aq.push_back(temp);
+                }  
             }
+          
             return true;
 		}
 
@@ -332,7 +315,7 @@ namespace ClauTextSharp.load_data
 
         private static bool DoThread2(object val) {
             DoThreadData2 data = new DoThreadData2((DoThreadData2)val);
-
+            
 			for (int i = data.strVecStart; i <= data.strVecEnd; ++i)
 			{
 				bool chkStr = ChkExist(data.strVec.get(i));
@@ -350,7 +333,7 @@ namespace ClauTextSharp.load_data
 			}
             return true;
         }
-		        
+
         public static bool ChkExist(String str) /// has bug?, unstatble?
         {
             int state = -1;
@@ -377,59 +360,56 @@ namespace ClauTextSharp.load_data
 
             return 0 == state;
         }
-        public static Pair<bool, int> Reserve2(StreamReader sr, ArrayQueue<String> aq, int num = 1)
+
+        public static Pair<bool, int> Reserve2(TextReader tr, MovableDeck<String> aq, int num, int thread_num,
+            Vector<String> strVecTemp, MovableDeck<String>[] MovableDeck, ref bool _end)
         {
             int count = 0;
             String temp = "";
-            Vector<String> strVecTemp = new Vector<String>();
-
-            int thread_num = 8;
-
-            Func<Object, bool> work = DoThread;
-            Func<Object, bool> work2 = DoThread2;
+            strVecTemp.clear();
+            Vector<Func<Object, bool>> work = new Vector<Func<Object, bool>>(thread_num);
+            Vector<Func<Object, bool>> work2 = new Vector<Func<object, bool>>(thread_num);
+            Vector<Func<Object, bool>> work3 = new Vector<Func<object, bool>>(thread_num);
             Vector<IAsyncResult> asyncRes = new Vector<IAsyncResult>(thread_num);
             Vector<IAsyncResult> asyncRes2 = new Vector<IAsyncResult>(thread_num);
+            Vector<IAsyncResult> asyncRes3 = new Vector<IAsyncResult>(thread_num);
 
-            ArrayQueue<String>[] arrayQueue = new ArrayQueue<String>[thread_num];
-            
-            for( int i=0; i < thread_num; ++i)
-            {
-                arrayQueue[i] = new ArrayQueue<String>();
-            }
 
-            for (int i = 0; i < num && false == sr.EndOfStream; ++i)
+            for (int i = 0; i < num; ++i)
             {
-                temp = sr.ReadLine();
+                temp = tr.ReadLine();
+                if (null == temp) { _end = true;  break; }
                 if (temp.Length == 0) { continue; }
                 strVecTemp.push_back(temp);
                 count++;
             }
 
-            if (count >= 100)
+            if (count > 100)
             {
                 DoThreadData2 param = new DoThreadData2();
                 //Thread[] thread = new Thread[thread_num];
                 param.strVec = strVecTemp;
 
-                for (int i = 0; i < thread_num-1; ++i)
+                for (int i = 0; i < thread_num - 1; ++i)
                 {
                     param.strVecStart = (count / thread_num) * i;
                     param.strVecEnd = (count / thread_num) * (i + 1) - 1;
 
-                    asyncRes2.set(i, work2.BeginInvoke((object)new DoThreadData2(param), null, null));
+                    work2.set(i, DoThread2);
+                    asyncRes2.set(i, work2.get(i).BeginInvoke((object)new DoThreadData2(param), null, null));
                     // thread[i] = new Thread(DoThread2);
                     // thread[i].Start(new DoThreadData2(param));
                 }
-                param.strVecStart = (count / thread_num) * ( thread_num -1 );
+                param.strVecStart = (count / thread_num) * (thread_num - 1);
                 param.strVecEnd = count - 1;
                 // thread[thread_num-1] = new Thread(DoThread2);
                 // thread[thread_num-1].Start(new DoThreadData2(param));
+                work2.set(thread_num - 1, DoThread2);
+                asyncRes2.set(thread_num - 1, work2.get(thread_num - 1).BeginInvoke((object)new DoThreadData2(param), null, null));
 
-                asyncRes2.set(thread_num-1, work2.BeginInvoke((object)new DoThreadData2(param), null, null));
-                
                 for (int i = 0; i < thread_num; ++i)
                 {
-                    work2.EndInvoke(asyncRes2.get(i));
+                    work2.get(i).EndInvoke(asyncRes2.get(i));
                 }
             }
             else if (count > 0)
@@ -442,39 +422,42 @@ namespace ClauTextSharp.load_data
                 DoThread2(new DoThreadData2(param));
             }
 
-            if (count >= 100)
+            if (count > 100 && !aq.empty()) // chk!!
             {
                 DoThreadData param = new DoThreadData();
-                Thread[] thread = new Thread[thread_num];
-
+                
                 param.strVec = strVecTemp;
 
                 for (int i = 0; i < thread_num-1; ++i)
                 {
-                    param.aq = arrayQueue[i];
+                    MovableDeck[i].clear();
+                    param.aq = MovableDeck[i];
                     param.strVecStart = (count / thread_num) * i;
                     param.strVecEnd = (count / thread_num) * (i + 1) - 1;
                     //thread[i] = new Thread(DoThread);
                     // thread[i].Start(new DoThreadData(param));
-
-                    asyncRes.set(i, work.BeginInvoke((object)new DoThreadData(param), null, null));
+                    work.set(i, DoThread);
+                    asyncRes.set(i, work.get(i).BeginInvoke((object)new DoThreadData(param), null, null));
                 }
-                param.aq = arrayQueue[thread_num-1];
+
+                MovableDeck[thread_num-1].clear();
+                param.aq = MovableDeck[thread_num-1];
                 param.strVecStart = (count / thread_num) * (thread_num - 1);
                 param.strVecEnd = count - 1;
                 //thread[thread_num-1] = new Thread(DoThread);
                 // thread[thread_num-1].Start(new DoThreadData(param));
-
-                asyncRes.set(thread_num - 1, work.BeginInvoke((object)new DoThreadData(param), null, null));
+                work.set(thread_num-1, DoThread);
+                asyncRes.set(thread_num - 1, work.get(thread_num-1).BeginInvoke((object)new DoThreadData(param), null, null));
 
                 for (int i = 0; i < thread_num; ++i)
                 {
-                    work.EndInvoke(asyncRes.get(i));
+                    work.get(i).EndInvoke(asyncRes.get(i));
                 }
 
+
                 for (int i = 0; i < thread_num; ++i)
                 {
-                    aq.push(arrayQueue[i]);
+                    aq.add_move(MovableDeck[i]); // has bug? - todo!!
                 }
             }
             else if (count > 0)
@@ -492,59 +475,52 @@ namespace ClauTextSharp.load_data
         }
 
         /// must lineNum > 0
-        public static Pair<bool, int> Reserve(StreamReader sr, ArrayQueue<String> strVec, int num = 1)
+        public static Pair<bool, int> Reserve(TextReader tr, MovableDeck<String> strVec, int num = 1)
         {
             String temp = "";
             int count = 0;
             
 
-            for (int i = 0; i < num && false == sr.EndOfStream; ++i)
+            for (int i = 0; i < num; ++i)
             {
-                temp = sr.ReadLine();
-                strVec.push(temp);
+                temp = tr.ReadLine();
+                if( temp == null ) { break; }
+                strVec.push_back(temp);
                 count++;
             }
-            sr = null;
             return new Pair<bool, int>( count > 0, count );
         }
 
-        public static String Top(ArrayQueue<String> strVec)
+        public static String Top(MovableDeck<String> strVec)
         {
-            return strVec.get(0);
+            return strVec.front();
         }
-        public static String Pop(ArrayQueue<String> strVec)
+        public static String Pop(MovableDeck<String> strVec)
         {
-            return strVec.pop();
-        }
-        public static int GetIndex(ArrayQueue<String> strVec, String str)
-        {
-            int idx = -1;
-
-            for (int i = 0; i < strVec.size(); ++i)
-            {
-                String x = strVec.get(i);
-                idx++;
-                if (x == str)
-                {
-                    return idx;
-                }
-            }
-            return -1;
+            return strVec.pop_front();
         }
 
-        public static Pair<bool, String> LookUp(ArrayQueue<String> strVec, int idx = 1)
+        private static Stack<String> tempStack = new Stack<String>();
+        public static Pair<bool, String> LookUp(MovableDeck<String> strVec, int idx = 1)
         {
             if (strVec.size() <= idx)
             {
                 return new Pair<bool, String>(false, "" );
             }
-            return new Pair<bool, String>(true, strVec.get(idx));
+            for (int i = 0; i < idx; ++i)
+            {
+                tempStack.Push(Pop(strVec));
+            }
+
+            String temp = Top(strVec);
+            for( int i=0; i < idx; ++i)
+            {
+                strVec.push_front(tempStack.Pop());
+            }
+
+            return new Pair<bool, String>(true, temp);
         }
-        /// must strVec[start] == up or down
-        /// now not use!!
-    
-		// To Do
-		// AddSpace : return String
+
 		public static String AddSpace(String str)
         {
             StringBuilder temp = new StringBuilder();

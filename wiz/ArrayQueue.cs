@@ -11,6 +11,11 @@ namespace ClauTextSharp.wiz
         private int num = 0;
         private int capacity = 2; // must be 2^n
 
+        public void clear()
+        {
+            num = 0;
+            start = 0;
+        }
         public ArrayQueue(int size = 2) // size must be 2^n.
         {
             capacity = size;
@@ -20,7 +25,7 @@ namespace ClauTextSharp.wiz
                 arr.Add(default(T));
             }
         }
-        // deep copy?
+
         public ArrayQueue(ArrayQueue<T> other)
         {
             arr = new List<T>(other.arr);

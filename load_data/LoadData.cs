@@ -31,13 +31,13 @@ namespace ClauTextSharp.load_data
 
 
         /// core
-        public static bool _LoadData(ArrayQueue<String> strVec, Reserver vecReserver, ref UserType global) // first, strVec.empty() must be true!!
+        public static bool _LoadData(MovableDeck<String> strVec, Reserver vecReserver, ref UserType global) // first, strVec.empty() must be true!!
         {
             int state = 0;
             int braceNum = 0;
             ArrayStack<int> state_reserve = new ArrayStack<int>();
             ArrayStack<int> do_reserve = new ArrayStack<int>();
-            Vector<UserType> nestedUT = new Vector<UserType>(1);
+            Vector<UserType> nestedUT = new Vector<UserType>(1, 0);
             String var1 = "", var2 = "", val = "";
 
             nestedUT.set(0, global);
@@ -57,7 +57,7 @@ namespace ClauTextSharp.load_data
                 }
             }
 
-            while (false == strVec.empty())
+            while (strVec.empty() == false)
             {
                 switch (state)
                 {
@@ -112,7 +112,7 @@ namespace ClauTextSharp.load_data
 
                             ///
                             nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2));
-                            UserType pTemp = new UserType();
+                            UserType pTemp = null;
                             nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2, ref pTemp);
 
                             braceNum++;
@@ -169,7 +169,7 @@ namespace ClauTextSharp.load_data
                             UserType temp = new UserType();
 
                             nestedUT.get(braceNum).AddUserTypeItem(temp);
-                            UserType pTemp = new UserType();
+                            UserType pTemp = null;
                             nestedUT.get(braceNum).GetLastUserTypeItemRef("", ref pTemp);
 
                             braceNum++;
@@ -270,7 +270,7 @@ namespace ClauTextSharp.load_data
                             ///
                             {
                                 nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2));
-                                UserType pTemp = new UserType();
+                                UserType pTemp = null;
                                 nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2, ref pTemp);
                                 var2 = "";
                                 braceNum++;
@@ -390,16 +390,16 @@ namespace ClauTextSharp.load_data
         public static bool LoadDataFromFile(String fileName, ref UserType global) /// global should be empty
 		{
             UserType globalTemp = new UserType(global);
-            FileStream inFile = null;
+            TextReader tr = null;
             try
             {
-                inFile = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-                StreamReader sr = new StreamReader(inFile);
-            
-                ArrayQueue<String> strVec = new ArrayQueue<String>();
+                //inFile = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                tr = File.OpenText(fileName);
+
+                MovableDeck<String> strVec = new MovableDeck<String>();
 
          
-                InFileReserver ifReserver = new InFileReserver(sr);
+                InFileReserver ifReserver = new InFileReserver(tr);
 
                 ifReserver.SetNum(100000);
                 // cf) empty file..
@@ -407,12 +407,11 @@ namespace ClauTextSharp.load_data
                 {
                     return true;
                 }
-
+                
                 UserType.ReplaceAll(globalTemp, Utility.reverse_specialStr2, Utility.reverse_specialStr);
-                sr.Close();
-                inFile.Close();
+                tr.Close();
             }
-            catch (Exception e) { Console.WriteLine(e.ToString()); if (null != inFile) { inFile.Close(); } return false; }
+            catch (Exception e) { Console.WriteLine(e.ToString()); if (null != tr) { tr.Close(); } return false; }
 
             global = globalTemp;
             return true;
@@ -435,11 +434,12 @@ namespace ClauTextSharp.load_data
                 str = Utility.ChangeStr(str, Utility.beforeWhitespaceVec, Utility.afterWhitespaceVec);
             }
             StringTokenizer tokenizer = new StringTokenizer(str, Utility.afterWhitespaceVec);
-            ArrayQueue<String> strVec = new ArrayQueue<String>();
+
+            MovableDeck<String> strVec = new MovableDeck<String>();
 
             while (tokenizer.hasMoreTokens())
             {
-                strVec.push(tokenizer.nextToken());
+                strVec.push_back(tokenizer.nextToken());
             }
             try
             {
