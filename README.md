@@ -1,2 +1,2 @@
 # ClauTextSharp
-C# version of ClauText.
+C# version of ClauText. (need to update!)
