@@ -6,6 +6,9 @@ using System.Threading;
 using System.Text;
 
 using ClauTextSharp.wiz;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace ClauTextSharp.load_data
 {
@@ -14,12 +17,9 @@ namespace ClauTextSharp.load_data
         // need reanme?, // for speed up?
         public readonly static String[] specialStr =  { "^",   " ",    "\t",   "\r",   "\n",   "#"  };
         public readonly static String[] specialStr2 = { "^0",  "^1",   "^2",   "^3",   "^4",   "^5" };
-        public readonly static Vector<String> reverse_specialStr = new Vector<String>(new List<String> { "#", "\n", "\r", "\t", " ", "^" });
-        public readonly static Vector<String> reverse_specialStr2 = new Vector<String>(new List<String> { "^5", "^4", "^3", "^2", "^1", "^0" });
         public readonly static Vector<String> beforeWhitespaceVec = new Vector<String>(new List<String> { " ", "\t", "\r", "\n" });
-        public readonly static Vector<String> afterWhitespaceVec = new Vector<String>(new List<String> { "^1", "^2", "^3", "^4" });
 
-   
+
         public Utility() { }
 
 
@@ -253,88 +253,275 @@ namespace ClauTextSharp.load_data
         {
             return ch == ' ' || ch == '\t' || ch == '\t' || ch == '\n';
         }
-        
 
-        private class DoThreadData // need to rename!
-        {
-            public Vector<String> strVec;
-            public MovableDeck<String> aq;
-            public int strVecStart;
-            public int strVecEnd;
-            public DoThreadData()
-            {
-                strVec = new Vector<String>();
-                aq = new MovableDeck<String>();
+        // AddSpace : return string
+        public static void AddSpace(String str, ref String temp)
+		{
+			temp = "";
 
-                strVecStart = -1;
-                strVecEnd = -1;
-            }
-            public DoThreadData(DoThreadData other)
-            {
-                strVec = other.strVec;
-                aq = other.aq;
-                strVecStart = other.strVecStart;
-                strVecEnd = other.strVecEnd;
-            }
-        }
-        
-        private static bool DoThread(object param) // need to rename!
-        {
-            
-            DoThreadData data = (DoThreadData)param;
-            StringTokenizer tokenizer = new StringTokenizer();
-
-            for (int i = data.strVecStart; i <= data.strVecEnd; ++i)
-            {
-                tokenizer.init(data.strVec.get(i));
-           
-                while (tokenizer.hasMoreTokens()) {
-                    String temp = tokenizer.nextToken();
-                    data.aq.push_back(temp);
-                }  
-            }
-          
-            return true;
-		}
-
-        private class DoThreadData2 // need to rename!
-        {
-            public Vector<String> strVec;
-            public int strVecStart;
-            public int strVecEnd;
-
-            public DoThreadData2() { }
-
-            public DoThreadData2(DoThreadData2 other)
-            {
-                strVec = other.strVec;
-                strVecStart = other.strVecStart;
-                strVecEnd = other.strVecEnd;
-            }
-        }
-
-        private static bool DoThread2(object val) {
-            DoThreadData2 data = new DoThreadData2((DoThreadData2)val);
-            
-			for (int i = data.strVecStart; i <= data.strVecEnd; ++i)
+			for (int i = 0; i < str.Length; ++i)
 			{
-				bool chkStr = ChkExist(data.strVec.get(i));
-				if (chkStr) {
-					data.strVec.set(i, ChangeStr(data.strVec.get(i), specialStr[0], specialStr2[0])); // ^ . ^0
-				    data.strVec.set(i, ChangeStr(data.strVec.get(i), specialStr[5], specialStr2[5])); // # . ^5
+				/// To Do - chabnge to switch statement.
+				if ('=' == str[i]) {
+                    temp += " = ";
+                }
+				else if ('{' == str[i])
+                {
+                    temp += " { ";
 				}
-
-                data.strVec.set(i, PassSharp(data.strVec.get(i)));
-                data.strVec.set(i, AddSpace(data.strVec.get(i)));
-
-				if (chkStr) {
-					data.strVec.set(i, ChangeStr(data.strVec.get(i), beforeWhitespaceVec, afterWhitespaceVec));
+				else if ('}' == str[i]) {
+                    temp += " } ";
+				}
+				else {
+					temp += str[i];
 				}
 			}
+			//return temp;
+		}
+
+        public static Pair<bool, int> Reserve2(TextReader tr, Deck<Token> aq, int num, ref bool _end) // _end?
+        {
+            int count = 0;
+            String temp;
+            Vector<String> strVecTemp = new Vector<string>();
+			for (int i = 0; i < num; ++i) {
+                temp = tr.ReadLine();
+                if (null == temp) { _end = true; break; }
+				strVecTemp.push_back(temp);
+				count++;
+			}
+
+            {
+                int left = 0; int right = count - 1;
+
+                for (int x = left; x <= right; ++x)
+                {
+                    //StringTokenizer tokenizer(std::move( (*strVecTemp)[x] ) );
+                    //while (tokenizer.hasMoreTokens()) {
+                    //	aq.push(tokenizer.nextToken());
+                    //}
+                    String statement = strVecTemp.get(x);
+                    int token_first = 0, token_last = 0; // idx of token in statement.
+                    int state = 0;
+
+
+                    for (int i = 0; i < statement.Length; ++i)
+                    {
+                        if (0 == state && '\"' == statement[i])
+                        {
+                            //token_last = i - 1;
+                            //if (token_last >= 0 && token_last - token_first + 1 > 0) {
+                            //	aq.push_back(statement.substring(token_first, token_last - token_first + 1));
+                            //}
+                            state = 1;
+                            //token_first = i; 
+                            token_last = i;
+                        }
+                        else if (1 == state && '\\' == statement[i - 1] && '\"' == statement[i])
+                        {
+                            token_last = i;
+                        }
+                        else if (1 == state && '\"' == statement[i])
+                        {
+                            state = 0; token_last = i;
+
+                            //aq.push_back(statement.substring(token_first, token_last - token_first + 1));
+                            //token_first = i + 1;
+                        }
+
+                        if (0 == state && '=' == statement[i])
+                        {
+                            token_last = i - 1;
+                            if (token_last >= 0 && token_last - token_first + 1 > 0)
+                            {
+                                aq.push_back(new Token(statement.Substring(token_first, token_last - token_first + 1)));
+                            }
+                            aq.push_back(new Token("="));
+                            token_first = i + 1;
+                        }
+                        else if (0 == state && IsWhitespace(statement[i]))
+                        { // isspace ' ' \t \r \n , etc... ?
+                            token_last = i - 1;
+                            if (token_last >= 0 && token_last - token_first + 1 > 0)
+                            {
+                                aq.push_back(new Token(statement.Substring(token_first, token_last - token_first + 1)));
+                            }
+                            token_first = i + 1;
+                        }
+                        else if (0 == state && '{' == statement[i])
+                        {
+                            token_last = i - 1;
+                            if (token_last >= 0 && token_last - token_first + 1 > 0)
+                            {
+                                aq.push_back(new Token(statement.Substring(token_first, token_last - token_first + 1)));
+                            }
+                            aq.push_back(new Token("{"));
+                            token_first = i + 1;
+                        }
+                        else if (0 == state && '}' == statement[i])
+                        {
+                            token_last = i - 1;
+                            if (token_last >= 0 && token_last - token_first + 1 > 0)
+                            {
+                                aq.push_back(new Token(statement.Substring(token_first, token_last - token_first + 1)));
+                            }
+                            aq.push_back(new Token("}"));
+                            token_first = i + 1;
+                        }
+
+                        if (0 == state && '#' == statement[i])
+                        { // different from load_data_from_file
+                            token_last = i - 1;
+                            if (token_last >= 0 && token_last - token_first + 1 > 0)
+                            {
+                                aq.push_back(new Token(statement.Substring(token_first, token_last - token_first + 1)));
+                            }
+                            int j = 0;
+                            for (j = i; j < statement.Length; ++j)
+                            {
+                                if (statement[j] == '\n') // cf) '\r' ?
+                                {
+                                    break;
+                                }
+                            }
+                            --j; // "before enter key" or "before end"
+
+                            if (j - i + 1 > 0)
+                            {
+                                aq.push_back(new Token(statement.Substring(i, j - i + 1), true));
+                            }
+                            token_first = j + 2;
+                            i = token_first - 1;
+                        }
+                    }
+
+
+                    if (token_first < statement.Length)
+                    {
+                        aq.push_back(new Token(statement.Substring(token_first)));
+                    }
+                }
+            }
+            
+            return new Pair<bool, int>(count > 0, count);
+		}
+
+        public static bool ChkComment(Deck<Token> strVec, load_data.UserType ut, Reserver reserver, int offset)
+		{
+			if (strVec.size() < offset) {
+
+                reserver.Functor(strVec);
+				while (strVec.size() < offset) // 
+				{
+
+                    reserver.Functor(strVec);
+					if (
+                        strVec.size() < offset &&
+						reserver.end()
+						) {
+						return false;
+					}
+				}
+            }
+
+            LinkedListNode<Token> x = strVec.GetFirst();
+            int count = 0;
+
+			do {
+				if (x.Value.isComment) {
+					ut.PushComment(x.Value.str);
+                    x = strVec.remove(x);
+                }
+				else if (count == offset - 1) {
+					return true;
+				}
+				else {
+					count++;
+                    x = x.Next;
+				}
+
+				if (x == null) { // chk
+                    reserver.Functor(strVec);
+                    x = strVec.GetFirst();
+                    for( int k=0; k < count; ++k)
+                    {
+                        x = x.Next;
+                    }
+					while (strVec.size() < offset) // 
+					{
+                        reserver.Functor(strVec);
+                        
+                        if (
+                            strVec.size() < offset &&
+							reserver.end()
+							) {
+							return false;
+						}
+					}
+                    // chk here?
+                    x = strVec.GetFirst();
+                    for (int k = 0; k < count; ++k)
+                    {
+                        x = x.Next;
+                    }
+				}
+			} while (true);
+		}
+	    public static string Top(Deck<Token> strVec, load_data.UserType ut, Reserver reserver)
+        {
+            if (strVec.empty() || strVec.GetFirst().Value.isComment)
+            {
+                if (false == ChkComment(strVec, ut, reserver, 1))
+                {
+                    return "";
+                }
+            }
+            if (strVec.empty()) { return ""; }
+            return strVec.GetFirst().Value.str;
+         }
+
+		public static bool Pop(Deck<Token> strVec, ref String str, load_data.UserType ut, Reserver reserver)
+        {
+            if (strVec.empty() || strVec.GetFirst().Value.isComment)
+            {
+                if (false == ChkComment(strVec, ut, reserver, 1))
+                {
+                    return false;
+                }
+            }
+
+            if (strVec.empty())
+            {
+                return false;
+            }
+
+            if (str != null)
+            {
+                str = strVec.GetFirst().Value.str;
+            }
+            strVec.pop_front();
+
             return true;
         }
 
-        public static bool ChkExist(String str) /// has bug?, unstatble?
+// lookup just one!
+		public static Pair<bool, Token> LookUp(Deck<Token> strVec, load_data.UserType ut, Reserver reserver)
+        {
+            if (!(strVec.size() >= 2 && false == strVec.GetFirst().Value.isComment && false == strVec.get(1).isComment))
+            {
+                if (false == ChkComment(strVec, ut, reserver, 2))
+                {
+                    return new Pair<bool, Token>(false, null);
+                }
+            }
+
+            if (strVec.size() >= 2)
+            {
+                return new Pair<bool, Token>(true, strVec.get(1));
+            }
+            return new Pair<bool, Token>(false, null);
+        }
+        public static bool ChkExist(String str) // for \"
         {
             int state = -1;
 
@@ -358,324 +545,7 @@ namespace ClauTextSharp.load_data
                 }
             }
 
-            return 0 == state;
-        }
-
-        public static Pair<bool, int> Reserve2(TextReader tr, MovableDeck<String> aq, int num, int thread_num,
-            Vector<String> strVecTemp, MovableDeck<String>[] MovableDeck, ref bool _end)
-        {
-            int count = 0;
-            String temp = "";
-            strVecTemp.clear();
-            Vector<Func<Object, bool>> work = new Vector<Func<Object, bool>>(thread_num);
-            Vector<Func<Object, bool>> work2 = new Vector<Func<object, bool>>(thread_num);
-            Vector<Func<Object, bool>> work3 = new Vector<Func<object, bool>>(thread_num);
-            Vector<IAsyncResult> asyncRes = new Vector<IAsyncResult>(thread_num);
-            Vector<IAsyncResult> asyncRes2 = new Vector<IAsyncResult>(thread_num);
-            Vector<IAsyncResult> asyncRes3 = new Vector<IAsyncResult>(thread_num);
-
-
-            for (int i = 0; i < num; ++i)
-            {
-                temp = tr.ReadLine();
-                if (null == temp) { _end = true;  break; }
-                if (temp.Length == 0) { continue; }
-                strVecTemp.push_back(temp);
-                count++;
-            }
-
-            if (count > 100)
-            {
-                DoThreadData2 param = new DoThreadData2();
-                //Thread[] thread = new Thread[thread_num];
-                param.strVec = strVecTemp;
-
-                for (int i = 0; i < thread_num - 1; ++i)
-                {
-                    param.strVecStart = (count / thread_num) * i;
-                    param.strVecEnd = (count / thread_num) * (i + 1) - 1;
-
-                    work2.set(i, DoThread2);
-                    asyncRes2.set(i, work2.get(i).BeginInvoke((object)new DoThreadData2(param), null, null));
-                    // thread[i] = new Thread(DoThread2);
-                    // thread[i].Start(new DoThreadData2(param));
-                }
-                param.strVecStart = (count / thread_num) * (thread_num - 1);
-                param.strVecEnd = count - 1;
-                // thread[thread_num-1] = new Thread(DoThread2);
-                // thread[thread_num-1].Start(new DoThreadData2(param));
-                work2.set(thread_num - 1, DoThread2);
-                asyncRes2.set(thread_num - 1, work2.get(thread_num - 1).BeginInvoke((object)new DoThreadData2(param), null, null));
-
-                for (int i = 0; i < thread_num; ++i)
-                {
-                    work2.get(i).EndInvoke(asyncRes2.get(i));
-                }
-            }
-            else if (count > 0)
-            {
-                DoThreadData2 param = new DoThreadData2();
-                param.strVec = strVecTemp;
-                param.strVecStart = 0;
-                param.strVecEnd = count - 1;
-
-                DoThread2(new DoThreadData2(param));
-            }
-
-            if (count > 100 && !aq.empty()) // chk!!
-            {
-                DoThreadData param = new DoThreadData();
-                
-                param.strVec = strVecTemp;
-
-                for (int i = 0; i < thread_num-1; ++i)
-                {
-                    MovableDeck[i].clear();
-                    param.aq = MovableDeck[i];
-                    param.strVecStart = (count / thread_num) * i;
-                    param.strVecEnd = (count / thread_num) * (i + 1) - 1;
-                    //thread[i] = new Thread(DoThread);
-                    // thread[i].Start(new DoThreadData(param));
-                    work.set(i, DoThread);
-                    asyncRes.set(i, work.get(i).BeginInvoke((object)new DoThreadData(param), null, null));
-                }
-
-                MovableDeck[thread_num-1].clear();
-                param.aq = MovableDeck[thread_num-1];
-                param.strVecStart = (count / thread_num) * (thread_num - 1);
-                param.strVecEnd = count - 1;
-                //thread[thread_num-1] = new Thread(DoThread);
-                // thread[thread_num-1].Start(new DoThreadData(param));
-                work.set(thread_num-1, DoThread);
-                asyncRes.set(thread_num - 1, work.get(thread_num-1).BeginInvoke((object)new DoThreadData(param), null, null));
-
-                for (int i = 0; i < thread_num; ++i)
-                {
-                    work.get(i).EndInvoke(asyncRes.get(i));
-                }
-
-
-                for (int i = 0; i < thread_num; ++i)
-                {
-                    aq.add_move(MovableDeck[i]); // has bug? - todo!!
-                }
-            }
-            else if (count > 0)
-            {
-                DoThreadData param = new DoThreadData();
-                param.strVec = strVecTemp;
-                param.aq = aq;
-                param.strVecStart = 0;
-                param.strVecEnd = count - 1;
-
-                DoThread(new DoThreadData(param));
-            }
-
-            return new Pair<bool, int>(count > 0, count);
-        }
-
-        /// must lineNum > 0
-        public static Pair<bool, int> Reserve(TextReader tr, MovableDeck<String> strVec, int num = 1)
-        {
-            String temp = "";
-            int count = 0;
-            
-
-            for (int i = 0; i < num; ++i)
-            {
-                temp = tr.ReadLine();
-                if( temp == null ) { break; }
-                strVec.push_back(temp);
-                count++;
-            }
-            return new Pair<bool, int>( count > 0, count );
-        }
-
-        public static String Top(MovableDeck<String> strVec)
-        {
-            return strVec.front();
-        }
-        public static String Pop(MovableDeck<String> strVec)
-        {
-            return strVec.pop_front();
-        }
-
-        private static Stack<String> tempStack = new Stack<String>();
-        public static Pair<bool, String> LookUp(MovableDeck<String> strVec, int idx = 1)
-        {
-            if (strVec.size() <= idx)
-            {
-                return new Pair<bool, String>(false, "" );
-            }
-            for (int i = 0; i < idx; ++i)
-            {
-                tempStack.Push(Pop(strVec));
-            }
-
-            String temp = Top(strVec);
-            for( int i=0; i < idx; ++i)
-            {
-                strVec.push_front(tempStack.Pop());
-            }
-
-            return new Pair<bool, String>(true, temp);
-        }
-
-		public static String AddSpace(String str)
-        {
-            StringBuilder temp = new StringBuilder();
-
-            for (int i = 0; i < str.Length; ++i)
-            {
-                /// To Do - chabnge to switch statement.
-                if ('=' == str[i])
-                {
-                    temp.Append(" ");
-                    temp.Append("=");
-                    temp.Append(" ");
-                }
-                else if ('{' == str[i])
-                {
-                    temp.Append(" ");
-                    temp.Append("{");
-                    temp.Append(" ");
-                }
-                else if ('}' == str[i])
-                {
-                    temp.Append(" ");
-                    temp.Append("}");
-                    temp.Append(" ");
-                }
-                else
-                {
-                    temp.Append(str[i]);
-                }
-            }
-
-            return temp.ToString();
-        }
-
-        /// need testing!
-        public static String PassSharp(String str)
-        {
-            StringBuilder temp = new StringBuilder();
-            int state = 0;
-
-            for (int i = 0; i < str.Length; ++i)
-            {
-                if (str[i] == '#') { state = 1; }
-                else if (str[i] == '\n') { state = 0; }
-
-                if (0 == state)
-                {
-                    temp.Append(str[i]);
-                }
-            }
-            return temp.ToString();
-        }
-
-
-        private static bool _ChangeStr(String str, Vector<String> changed_str, Vector<String> result_str, ref int i, ref int state, ref StringBuilder temp)
-        {
-            for (int j = 0; j < changed_str.size(); ++j)
-            {
-                if (StringUtility.Comp(str, i, changed_str.get(j), changed_str.get(j).Length))
-                {
-                    state = 1;
-                    temp.Append(result_str.get(j));
-                    i = i + changed_str.get(j).Length - 1;
-                    return true;
-                }
-            }
-            return false;
-        }
-        private static bool _ChangeStr(String str, String changed_str, String result_str, ref int i, ref int state, ref StringBuilder temp)
-        {
-            if (StringUtility.Comp(str, i, changed_str, changed_str.Length))
-            {
-                state = 1;
-                temp.Append(result_str);
-                i = i + changed_str.Length - 1;
-                return true;
-            }
-            return false;
-        }
-
-        // 길이가 긴 문자열이 먼저 나와야 한다?
-        public static String ChangeStr(String str, String changed_str, String result_str)
-        {
-            StringBuilder temp = new StringBuilder();
-            int state = 0;
-
-
-            for (int i = 0; i < str.Length; ++i)
-            {
-                if (0 == state && i == 0 && '\"' == str[i])
-                {
-                    state = 1;
-
-                    temp.Append(str[i]);
-                }
-                else if (0 == state && i > 0 && '\"' == str[i] && '\\' != str[i - 1])
-                {
-                    state = 1;
-
-                    temp.Append(str[i]);
-                }
-                else if (1 == state && _ChangeStr(str, changed_str, result_str, ref i, ref state, ref temp))
-                {
-                    //
-                }
-                else if ((1 == state && i > 0 && '\\' != str[i - 1] && '\"' == str[i]))
-                {
-                    state = 0;
-
-                    temp.Append('\"');
-                }
-                else
-                {
-
-                    temp.Append(str[i]);
-                }
-            }
-
-            return temp.ToString();
-        }
-        public static String ChangeStr(String str, Vector<String> changed_str, Vector<String> result_str)
-        {
-            StringBuilder temp = new StringBuilder();
-            int state = 0;
-
-
-            for (int i = 0; i < str.Length; ++i)
-            {
-                if (0 == state && i == 0 && '\"' == str[i])
-                {
-                    state = 1;
-                    temp.Append(str[i]);
-                }
-                else if (0 == state && i > 0 && '\"' == str[i] && '\\' != str[i - 1])
-                {
-                    state = 1;
-                    temp.Append(str[i]);
-                }
-                else if (1 == state && _ChangeStr(str, changed_str, result_str, ref i, ref state, ref temp))
-                {
-                    //
-                }
-                else if ((1 == state && i > 0 && '\\' != str[i - 1] && '\"' == str[i]))
-                {
-                    state = 0;
-                    temp.Append('\"');
-                }
-                else
-                {
-                    temp.Append(str[i]);
-                }
-            }
-
-            return temp.ToString();
-        }
-
+            return 0 == state; // exist and valid !! chk - todo!
+        } 
     }
 }

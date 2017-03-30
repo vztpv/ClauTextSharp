@@ -24,439 +24,502 @@ namespace ClauTextSharp.load_data
 
         private readonly static String LEFT = "{";
         private readonly static String RIGHT = "}";
-        private readonly static String EQ = "=";
-
-        private readonly static int RIGHT_DO = 1;
-
+        private readonly static String EQ_STR = "=";
 
 
         /// core
-        public static bool _LoadData(MovableDeck<String> strVec, Reserver vecReserver, ref UserType global) // first, strVec.empty() must be true!!
+        private static bool isState0(long state_reserve)
         {
+            return 1 == state_reserve;
+        }
+        /// core
+        public static bool _LoadData(Deck<Token> strVec, Reserver reserver, UserType global)  // first, strVec.empty() must be true!!
+        {
+
             int state = 0;
             int braceNum = 0;
-            ArrayStack<int> state_reserve = new ArrayStack<int>();
-            ArrayStack<int> do_reserve = new ArrayStack<int>();
-            Vector<UserType> nestedUT = new Vector<UserType>(1, 0);
+            long state_reserve = 0;
+            Vector<UserType> nestedUT = new Vector<UserType>();
             String var1 = "", var2 = "", val = "";
 
-            nestedUT.set(0, global);
-            {
-                vecReserver.functor(strVec);
 
-                while (strVec.empty())
-                {
-                    vecReserver.functor(strVec);
-                    if (
+            nestedUT.push_back(global);
+
+		    {
+			    reserver.Functor(strVec);
+
+			    while (strVec.empty())
+			    {
+				    reserver.Functor(strVec);
+				    if (
                         strVec.empty() &&
-                        vecReserver.end()
-                        )
-                    {
-                        return false; // throw "Err nextToken does not exist"; // cf) or empty file or empty String!
-                    }
-                }
-            }
+					    reserver.end()
+					    ) {
+					    return false; // throw "Err nextToken does not exist"; // cf) or empty file or empty String!
+				    }
+			    }
+    }
 
-            while (strVec.empty() == false)
-            {
-                switch (state)
-                {
-                    case 0:
-                        if (LEFT == Utility.Top(strVec))
+		
+		    while (false == strVec.empty()) {
+			    switch (state)
+			    {
+			    case 0:
+				    if (LEFT == (Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+					    state = 2;
+				    }
+				    else {
+					    Pair<Boolean, Token> bsPair = Utility.LookUp(strVec, nestedUT.get(braceNum), reserver);
+
+					    if (bsPair.first) {
+						    if (EQ_STR ==(bsPair.second.str)) {
+                                String temp = "";
+							    Utility.Pop(strVec, ref var2, nestedUT.get(braceNum), reserver);
+							    Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+							    state = 2;
+						    }
+						    else {
+							    if (Utility.Pop(strVec, ref var1, nestedUT.get(braceNum), reserver)) {
+								    nestedUT.get(braceNum).AddItem("", var1);
+								    state = 0;
+							    }
+						    }
+					    }
+					    else {
+						    if (Utility.Pop(strVec, ref var1, nestedUT.get(braceNum), reserver)) {
+							    nestedUT.get(braceNum).AddItem("", var1);
+							    state = 0;
+						    }
+					    }
+				    }
+				    break;
+			    case 1:
+				    if (RIGHT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                        String temp = "";
+					    Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+					    state = 0;
+				    }
+				    else {
+					    // syntax error.
+					    throw new Exception("syntax error 1 ");
+				    }
+				    break;
+			    case 2:
+				    if (LEFT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                            String temp = "";
+                            Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+
+					    ///
+					    UserType pTemp = new UserType(var2);
+                        nestedUT.get(braceNum).AddUserTypeItem(pTemp);
+
+                        braceNum++;
+
+					    /// new nestedUT
+					    if (nestedUT.size() == braceNum) /// changed 2014.01.23..
+						    nestedUT.push_back(null);
+
+					    /// initial new nestedUT.
+					    nestedUT.set(braceNum, pTemp);
+					    ///
+					    state = 3;
+				    }
+				    else {
+					    if (Utility.Pop(strVec, ref val, nestedUT.get(braceNum), reserver)) {
+						    nestedUT.get(braceNum).AddItem(var2, val);
+						    var2 = "";
+						    val = "";
+
+						    state = 0;
+					    }
+				    }
+				    break;
+			    case 3:
+				    if (RIGHT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                        String temp = "";
+                        Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+
+					    nestedUT.set(braceNum, null);
+					    braceNum--;
+
+					    state = 0;
+				    }
+				    else {
+					    {
+						    /// uisng struct
+						    state_reserve++;
+						    state = 4;
+					    }
+					    //else
+					    {
+						    //	throw  "syntax error 2 ";
+					    }
+				    }
+				    break;
+			    case 4:
+				    if (LEFT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
                         {
-                            //Utility.Pop(strVec);
-                            state = 2;
+                            String strTemp = "";
+                            Utility.Pop(strVec, ref strTemp, nestedUT.get(braceNum), reserver);
                         }
-                        else
-                        {
-                            Pair<bool, String> bsPair = Utility.LookUp(strVec, 1);
-                            if (bsPair.first)
-                            {
-                                if (EQ == bsPair.second)
-                                {
-                                    var2 = Utility.Pop(strVec);
-                                    Utility.Pop(strVec);
-                                    state = 2;
-                                }
-                                else
-                                {
-                                    var1 = Utility.Pop(strVec);
-                                    nestedUT.get(braceNum).AddItem("", (String)var1);
-                                    state = 0;
-                                }
-                            }
-                            else
-                            {
-                                var1 = Utility.Pop(strVec);
-                                nestedUT.get(braceNum).AddItem("", (String)var1);
-                                state = 0;
-                            }
-                        }
-                        break;
-                    case 1:
-                        if (RIGHT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
-                            state = 0;
-                        }
-                        else
-                        {
-                            // syntax error.
-                            throw new Exception("syntax error 1 ");
-                        }
-                        break;
-                    case 2:
-                        if (LEFT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
+					    UserType temp = new UserType("");
 
-                            ///
-                            nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2));
-                            UserType pTemp = null;
-                            nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2, ref pTemp);
+                        nestedUT.get(braceNum).AddUserTypeItem(temp);
+                        UserType pTemp = temp;
 
-                            braceNum++;
+                        braceNum++;
 
-                            /// new nestedUT
-                            if (nestedUT.size() == braceNum) /// changed 2014.01.23..
-                                nestedUT.push_back(null);
+					    /// new nestedUT
+					    if (nestedUT.size() == braceNum) /// changed 2014.01.23..
+						    nestedUT.push_back(null);
 
-                            /// initial new nestedUT.
-                            nestedUT.set(braceNum, pTemp);
-                            ///
-                            state = 3;
-                        }
-                        else
-                        {
-                            val = Utility.Pop(strVec);
+					    /// initial new nestedUT.
+					    nestedUT.set(braceNum, pTemp);
+					    ///
+					    //}
 
-                            nestedUT.get(braceNum).AddItem((String)var2, (String)val);
+					    state = 5;
+				    }
+				    else if (RIGHT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                        String temp = "";
+
+                        Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+					    state = isState0(state_reserve) ? 0 : 4;
+					    state_reserve--;
+
+					    {
+						    nestedUT.set(braceNum, null);
+						    braceNum--;
+					    }
+				    }
+				    else {
+					    Pair<Boolean, Token> bsPair = Utility.LookUp(strVec, nestedUT.get(braceNum), reserver);
+					    if (bsPair.first) {
+						    if (EQ_STR ==(bsPair.second.str)) {
+                                    // var2strTemp
+                                String temp = "";
+							    Utility.Pop(strVec, ref var2, nestedUT.get(braceNum), reserver);
+							    Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver); // pass EQ_STR
+							    state = 6;
+						    }
+						    else {
+							    // var1
+							    if (Utility.Pop(strVec, ref var1, nestedUT.get(braceNum), reserver)) {
+								    nestedUT.get(braceNum).AddItem("", var1);
+								    var1 = "";
+
+								    state = 4;
+							    }
+						    }
+					    }
+					    else
+					    {
+						    // var1
+						    if (Utility.Pop(strVec, ref var1, nestedUT.get(braceNum), reserver))
+						    {
+							    nestedUT.get(braceNum).AddItem("", var1);
+							    var1 = "";
+
+							    state = 4;
+						    }
+					    }
+				    }
+				    break;
+			    case 5:
+				    if (RIGHT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                            String temp = "";
+					    Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+
+					    //if (flag1 == 0) {
+					    nestedUT.set(braceNum, null);
+					    braceNum--;
+					    // }
+					    //
+					    state = 4;
+				    }
+
+				    else {
+					    int idx = -1;
+                        int num = -1;
+
+					
+					    {
+						    /// uisng struct
+						    state_reserve++;
+						    state = 4;
+					    }
+					    //else
+					    {
+						    //	throw "syntax error 4  ";
+					    }
+				    }
+				    break;
+			    case 6:
+				    if (LEFT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                            String temp = "";
+					    Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+
+					    ///
+					    {
+						    UserType pTemp = new UserType(var2);
+                            nestedUT.get(braceNum).AddUserTypeItem(pTemp);
                             var2 = "";
-                            val = "";
-
-                            state = 0;
-                        }
-                        break;
-                    case 3:
-                        if (RIGHT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
-
-                            nestedUT.set(braceNum, null);
-                            braceNum--;
-
-                            state = 0;
-                        }
-                        else
-                        {
-                            {
-                                /// uisng struct
-                                state_reserve.push(0);
-                                do_reserve.push(RIGHT_DO);
-                                state = 4;
-                            }
-                            //else
-                            {
-                                //	throw  "syntax error 2 ";
-                            }
-                        }
-                        break;
-                    case 4:
-                        if (LEFT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
-
-                            UserType temp = new UserType();
-
-                            nestedUT.get(braceNum).AddUserTypeItem(temp);
-                            UserType pTemp = null;
-                            nestedUT.get(braceNum).GetLastUserTypeItemRef("", ref pTemp);
-
                             braceNum++;
 
-                            /// new nestedUT
-                            if (nestedUT.size() == braceNum) /// changed 2014.01.23..
-                                nestedUT.push_back(null);
+						    /// new nestedUT
+						    if (nestedUT.size() == braceNum) /// changed 2014.01.23..
+							    nestedUT.push_back(null);
 
-                            /// initial new nestedUT.
-                            nestedUT.set(braceNum, pTemp);
-                            ///
-                            //}
+						    /// initial new nestedUT.
+						    nestedUT.set(braceNum, pTemp);
+					    }
+					    ///
+					    state = 7;
+				    }
+				    else {
+					    if (Utility.Pop(strVec, ref val, nestedUT.get(braceNum), reserver)) {
 
-                            state = 5;
-                        }
-                        else if (RIGHT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
-                            state = state_reserve.top();
-                            state_reserve.pop();
-                            int do_id = do_reserve.top();
-                            do_reserve.pop();
-                            //if (do_id == RIGHT_DO)
-                            {
-                                nestedUT.set(braceNum, null);
-                                braceNum--;
-                            }
-                        }
-                        else
-                        {
-                            Pair<bool, String> bsPair = Utility.LookUp(strVec, 1);
-                            if (bsPair.first)
-                            {
-                                if (EQ == bsPair.second)
-                                {
-                                    // var2
-                                    var2 = Utility.Pop(strVec);
-                                    Utility.Pop(strVec); // pass EQ
-                                    
-                                    state = 6;
-                                }
-                                else
-                                {
-                                    // var1
-                                    var1 = Utility.Pop(strVec);
-                                    nestedUT.get(braceNum).AddItem("", (String)var1);
-                                    var1 = "";
+						    nestedUT.get(braceNum).AddItem(var2, val);
+						    var2 = ""; val = "";
+						    if (strVec.empty())
+						    {
+							    //
+						    }
+						    else if (RIGHT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                                    String temp = "";
+							    Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
 
-                                    state = 4;
-                                }
-                            }
-                            else
-                            {
-                                // var1
-                                var1 = Utility.Pop(strVec);
-                                nestedUT.get(braceNum).AddItem("", (String)var1);
-                                var1 = "";
+							    {
+								    state = isState0(state_reserve) ? 0 : 4;
+								    state_reserve--;
 
-                                state = 4;
-                            }
-                        }
-                        break;
-                    case 5:
-                        if (RIGHT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
+								    {
+									    nestedUT.set(braceNum, null);
+									    braceNum--;
+								    }
+							    }
+							    {
+								    //state = 4;
+							    }
+						    }
+						    else {
+							    state = 4;
+						    }
+					    }
+				    }
+				    break;
+			    case 7:
+				    if (RIGHT ==(Utility.Top(strVec, nestedUT.get(braceNum), reserver))) {
+                            String temp = "";
+					    Utility.Pop(strVec, ref temp, nestedUT.get(braceNum), reserver);
+					    //
 
-                            //if (flag1 == 0) {
-                            nestedUT.set(braceNum, null);
-                            braceNum--;
-                            // }
-                            //
-                            state = 4;
-                        }
+					    nestedUT.set(braceNum, null);
+					    braceNum--;
+					    //
+					    state = 4;
+				    }
+				    else {
+					    int idx = -1;
+                        int num = -1;
+					
+					    {
+						    /// uisng struct
+						    state_reserve++;
 
-                        else
-                        {
-                            {
-                                /// uisng struct
-                                state_reserve.push(4);
+						    state = 4;
+					    }
+					    //else
+					    {
+						    //throw "syntax error 5 ";
+					    }
+				    }
+				    break;
+			    default:
+				    // syntax err!!
 
-                                {
-                                    do_reserve.push(RIGHT_DO);
-                                }
-                                state = 4;
-                            }
-                            //else
-                            {
-                                //	throw "syntax error 4  ";
-                            }
-                        }
-                        break;
-                    case 6:
-                        if (LEFT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
+				    throw new Exception("syntax error 6 ");
+			    }
 
-                            ///
-                            {
-                                nestedUT.get(braceNum).AddUserTypeItem(new UserType((String)var2));
-                                UserType pTemp = null;
-                                nestedUT.get(braceNum).GetLastUserTypeItemRef((String)var2, ref pTemp);
-                                var2 = "";
-                                braceNum++;
+			    if (strVec.size() < 10) {
+				    reserver.Functor(strVec);
 
-                                /// new nestedUT
-                                if (nestedUT.size() == braceNum) /// changed 2014.01.23..
-                                    nestedUT.push_back(null);
-
-                                /// initial new nestedUT.
-                                nestedUT.set(braceNum, pTemp);
-                            }
-                            ///
-                            state = 7;
-                        }
-                        else
-                        {
-                            val = Utility.Pop(strVec);
-
-                            nestedUT.get(braceNum).AddItem((String)var2, (String)val);
-                            var2 = ""; val = "";
-                            if (strVec.empty())
-                            {
-                                //
-                            }
-                            else if (RIGHT == Utility.Top(strVec))
-                            {
-                                Utility.Pop(strVec);
-
-                                {
-                                    state = state_reserve.top();
-                                    state_reserve.pop();
-
-                                    int do_id = do_reserve.top();
-                                    do_reserve.pop();
-                                    //if (do_id == RIGHT_DO)
-                                    {
-                                        nestedUT.set(braceNum, null);
-                                        braceNum--;
-                                    }
-                                }
-                                {
-                                    //state = 4;
-                                }
-                            }
-                            else
-                            {
-                                state = 4;
-                            }
-                        }
-                        break;
-                    case 7:
-                        if (RIGHT == Utility.Top(strVec))
-                        {
-                            Utility.Pop(strVec);
-                            //
-
-                            nestedUT.set(braceNum, null);
-                            braceNum--;
-                            //
-                            state = 4;
-                        }
-                        else
-                        {
-                            {
-                                /// uisng struct
-                                state_reserve.push(4);
-
-                                {
-                                    do_reserve.push(RIGHT_DO);
-                                }
-                                state = 4;
-                            }
-                            //else
-                            {
-                                //throw "syntax error 5 ";
-                            }
-                        }
-                        break;
-                    default:
-                        // syntax err!!
-
-                        throw new Exception("syntax error 6 ");
-                        break;
-                }
-
-                if (strVec.size() < 10)
-                {
-                    vecReserver.functor(strVec);
-
-                    while (strVec.empty()) // (strVec.empty())
-                    {
-                        vecReserver.functor(strVec);
-                        if (
+				    while (strVec.empty()) // (strVec.empty())
+				    {
+					    reserver.Functor(strVec);
+					    if (
                             strVec.empty() &&
-                            vecReserver.end()
-                            )
-                        {
-                            // throw "Err nextToken does not exist2";
-                            break;
-                        }
-                    }
-                }
-            }
-            if (state != 0)
-            {
-                Console.WriteLine("strVec.size() " + strVec.size());
-                throw new Exception("error final state is not 0! : state - " + state);
-            }
-            if (braceNum != 0)
-            {
-                throw new Exception(("chk braceNum is ") + braceNum.ToString());
-            }
+						    reserver.end()
+						    ) {
+						    // throw "Err nextToken does not exist2";
+						    break;
+					    }
+				    }
+			    }
+		    }
+		    if (state != 0) {
+			    throw new Exception("error final state is not 0!  : " + state.ToString());
+		    }
+		    if (braceNum != 0) {
+			    throw new Exception("chk braceNum is " + braceNum.ToString());
+		    }
+		
+		    return true;
+	    }
 
-            return true;
-        }
-
-        public static bool LoadDataFromFile(String fileName, ref UserType global) /// global should be empty
-		{
-            UserType globalTemp = new UserType(global);
+	    public static bool LoadDataFromFile(String fileName, ref UserType global) 
+        {
+            UserType globalTemp=null;
             TextReader tr = null;
+
             try
             {
-                //inFile = new FileStream(fileName, FileMode.Open, FileAccess.Read);
                 tr = File.OpenText(fileName);
 
-                MovableDeck<String> strVec = new MovableDeck<String>();
+                globalTemp = new UserType(global);
+                Deck<Token> strVec = new Deck<Token>(); ;
 
-         
                 InFileReserver ifReserver = new InFileReserver(tr);
 
                 ifReserver.SetNum(100000);
+
                 // cf) empty file..
-                if (false == _LoadData(strVec, (Reserver)ifReserver, ref globalTemp))
+                if (false == _LoadData(strVec, ifReserver, globalTemp))
                 {
                     return true;
                 }
-                
-                UserType.ReplaceAll(globalTemp, Utility.reverse_specialStr2, Utility.reverse_specialStr);
+
                 tr.Close();
             }
-            catch (Exception e) { Console.WriteLine(e.ToString()); if (null != tr) { tr.Close(); } return false; }
+		    catch(Exception e)
+            {
+                if( null != tr) { tr.Close(); }
+                return false;
+            }
 
             global = globalTemp;
-            return true;
+		    return true;
         }
+
 
         public static bool LoadDataFromString(String str, ref UserType ut)
         {
-            UserType utTemp = new UserType(ut);
+            UserType utTemp = new UserType(ut); // chk new UserType() ?
+            Deck<Token> strVec = new Deck<Token>();
 
-            bool chk = Utility.ChkExist(str);
-            if (chk)
-            {
-                str = Utility.ChangeStr(str, Utility.specialStr[0], Utility.specialStr2[0]);//{ "^" }, { "^0" });
-                str = Utility.ChangeStr(str, Utility.specialStr[5], Utility.specialStr2[5]);//{ "#" }, { "^5" });
-            }
-            str = Utility.PassSharp(str);
-            str = Utility.AddSpace(str);
-            if (chk)
-            {
-                str = Utility.ChangeStr(str, Utility.beforeWhitespaceVec, Utility.afterWhitespaceVec);
-            }
-            StringTokenizer tokenizer = new StringTokenizer(str, Utility.afterWhitespaceVec);
+            String statement = str; int token_first = 0, token_last = 0; // idx of token in
+                                                                             // statement.
+            int state = 0;
 
-            MovableDeck<String> strVec = new MovableDeck<String>();
-
-            while (tokenizer.hasMoreTokens())
+            for (int i = 0; i < statement.Length; ++i)
             {
-                strVec.push_back(tokenizer.nextToken());
+                if (0 == state && '\"' == statement[i])
+                {
+                    // token_last = i - 1;
+                    // if (token_last >= 0 && token_last - token_first + 1 > 0) {
+                    // strVec.emplace_back(statement.substr(token_first, token_last -
+                    // token_first + 1));
+                    // }
+                    state = 1;
+                    // token_first = i;
+                    token_last = i;
+                }
+                else if (1 == state && '\\' == statement[i - 1] && '\"' == statement[i])
+                {
+                    token_last = i;
+                }
+                else if (1 == state && '\"' == statement[i])
+                {
+                    state = 0;
+                    token_last = i;
+
+                    // strVec.emplace_back(statement.substr(token_first, token_last -
+                    // token_first + 1));
+                    // token_first = i + 1;
+                }
+
+                if (0 == state && '=' == statement[i])
+                {
+                    token_last = i - 1;
+                    if (token_last >= 0 && token_last - token_first + 1 > 0)
+                    {
+                        strVec.push_back(new Token(statement.Substring(token_first, token_last + 1)));
+                    }
+                    strVec.push_back(new Token("="));
+                    token_first = i + 1;
+                }
+                else if (0 == state && Global.IsWhiteSpace(statement[i]))
+                { // isspace																																									// etc...// ?
+                    token_last = i - 1;
+                    if (token_last >= 0 && token_last - token_first + 1 > 0)
+                    {
+                        strVec.push_back(new Token(statement.Substring(token_first, token_last - token_first + 1)));
+                    }
+                    token_first = i + 1;
+                }
+                else if (0 == state && '{' == statement[i])
+                {
+                    token_last = i - 1;
+                    if (token_last >= 0 && token_last - token_first + 1 > 0)
+                    {
+                        strVec.push_back(new Token(statement.Substring(token_first, token_last + 1)));
+                    }
+                    strVec.push_back(new Token("{"));
+                    token_first = i + 1;
+                }
+                else if (0 == state && '}' == statement[i])
+                {
+                    token_last = i - 1;
+                    if (token_last >= 0 && token_last - token_first + 1 > 0)
+                    {
+                        strVec.push_back(new Token(statement.Substring(token_first, token_last - token_first + 1)));
+                    }
+                    strVec.push_back(new Token("}"));
+                    token_first = i + 1;
+                }
+
+                if (0 == state && '#' == statement[i])
+                { // different from load_data_from_file
+                    token_last = i - 1;
+                    if (token_last >= 0 && token_last - token_first + 1 > 0)
+                    {
+                        strVec.push_back(new Token(statement.Substring(token_first, token_last + 1)));
+                    }
+                    int j = 0;
+                    for (j = i; j < statement.Length; ++j)
+                    {
+                        if (statement[j] == '\n') // cf)																																								// ?
+                        { break; }
+                    }
+                    --j; // "before enter key" or "before end"
+
+                    if (j - i + 1 > 0)
+                    {
+                        strVec.push_back(new Token(statement.Substring(i, j + 1), true));
+                    }
+                    token_first = j + 2;
+                    i = token_first - 1;
+                }
             }
+
+            if (token_first < statement.Length)
+            {
+                strVec.push_back(new Token(statement.Substring(token_first)));
+            }
+
             try
             {
                 // empty String!
                 NoneReserver nonReserver = new NoneReserver();
-                if (false == _LoadData(strVec, (Reserver)nonReserver, ref utTemp))
+                if (false == _LoadData(strVec, nonReserver, utTemp))
                 {
                     return true;
                 }
-
-                if (chk)
-                {
-                    UserType.ReplaceAll(utTemp, Utility.reverse_specialStr2, Utility.reverse_specialStr);
-                }
             }
-            catch (Exception e) { Console.WriteLine(e.ToString()); return false; }
-
+            catch (Exception e)
+            {
+                return false;
+            }
             ut = utTemp;
             return true;
         }
@@ -1433,7 +1496,7 @@ namespace ClauTextSharp.load_data
         { /// , int option
             FileStream outFile=null;
             StreamWriter sw=null;
-            try
+           // try
             {
                 if (option2 == "")
                 {
@@ -1455,9 +1518,10 @@ namespace ClauTextSharp.load_data
                     global.Save2(sw);
 
                 sw.Flush();
+                sw.Close();
                 outFile.Close();
             }
-            catch( Exception e ) { Console.WriteLine(e.ToString()); if (null != outFile) { outFile.Close(); } return false; }
+          //  catch( Exception e ) { Console.WriteLine(e.ToString()); if (null != sw) { sw.Close(); }  if (null != outFile) { outFile.Close(); } return false; }
             return true;
         }
 

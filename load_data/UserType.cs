@@ -10,43 +10,13 @@ namespace ClauTextSharp.load_data
 {
     public class UserType : Type
     {
-        // thread related data and function.
-        private class DoThreadData
+        public void PushComment(String comment)
         {
-            public Vector<UserType> utVec;
-            public Vector<String> target_ch;
-            public Vector<String> result_ch;
-            public int utVecStart;
-            public int utVecEnd;
-
-            public DoThreadData()
-            {
-                utVec = new Vector<UserType>();
-                target_ch = new Vector<String>();
-                result_ch = new Vector<String>();
-                utVecStart = -1;
-                utVecEnd = -1;
-            }
-            public DoThreadData(DoThreadData other)
-            {
-                utVec = other.utVec;
-                target_ch = other.target_ch;
-                result_ch = other.result_ch;
-                utVecStart = other.utVecStart;
-                utVecEnd = other.utVecEnd;
-            }
+            commentList.push_back(comment);
         }
-        private static void DoThread(Object val)
-        {
-            DoThreadData data = (DoThreadData)val;
-            for (int i = data.utVecStart; i <= data.utVecEnd; ++i)
-            {
-                ReplaceAll(data.utVec.get(i), data.target_ch, data.result_ch);
-            }
-        }
-
         // private memeber..
         private Vector<int> ilist;
+        private Vector<String> commentList;
         private Vector<ItemType<String>> itemList;
         private Vector<UserType> userTypeList;
         private UserType parent;
@@ -57,7 +27,7 @@ namespace ClauTextSharp.load_data
             ilist = new Vector<int>();
             itemList = new Vector<ItemType<String>>();
             userTypeList = new Vector<UserType>();
-
+            commentList = new Vector<String>();
             parent = null;
         }
         public UserType(UserType other) : base(other.GetName())
@@ -69,6 +39,7 @@ namespace ClauTextSharp.load_data
         {
             ilist = (other.ilist);
             itemList = (other.itemList);
+            commentList = other.commentList;
             parent = other.parent;
 
             userTypeList = new Vector<UserType>();
@@ -295,7 +266,7 @@ namespace ClauTextSharp.load_data
             /// parent.removeUserType(name); - ToDo - X
             ilist.clear(); // = Vector<int>();
             itemList.clear(); // = Vector<ItemType<String>>();
-
+            commentList.clear();
             RemoveUserTypeList();
         }
         public void RemoveUserTypeList()
@@ -403,7 +374,7 @@ namespace ClauTextSharp.load_data
         public void InsertUserTypeByIlist(int ilist_idx, UserType item)
         {
             int userTypeIndex = _GetUserTypeIndexFromIlistIndex(ilist, ilist_idx);
-            UserType temp = new UserType(item);
+            UserType temp = item; // new UserType(item);
 
             temp.parent = this;
 
@@ -434,7 +405,7 @@ namespace ClauTextSharp.load_data
         }
         public void AddUserTypeItem(UserType item)
         {
-            UserType temp = new UserType(item); //new UserType 제외??
+            UserType temp = item; // new UserType(item); //new UserType 제외??
             temp.parent = this;
 
             ilist.push_back(2);
@@ -449,7 +420,7 @@ namespace ClauTextSharp.load_data
         }
         public void AddUserTypeItemAtFront(UserType item)
         {
-            UserType temp = new UserType(item);
+            UserType temp = item;// new UserType(item);
             temp.parent = this;
 
             ilist.insert(0, 2);
@@ -527,7 +498,21 @@ namespace ClauTextSharp.load_data
 			int itemListCount = 0;
             int userTypeListCount = 0;
 
-			for (int i = 0; i < ut.ilist.size(); ++i) {
+            for (int i = 0; i < ut.commentList.size(); ++i)
+            {
+                for (int k = 0; k < depth; ++k)
+                {
+                    sw.Write("\t");
+                }
+                sw.Write(ut.commentList.get(i));
+
+                if (i < ut.commentList.size() - 1 || false == ut.ilist.empty())
+                {
+                    sw.Write("\n");
+                }
+
+            }
+            for (int i = 0; i < ut.ilist.size(); ++i) {
 				if (ut.IsItemType(i)) {
 					for (int j = 0; j < ut.itemList.get(itemListCount).size(); j++) {
 						for (int k = 0; k<depth; ++k) {
@@ -578,7 +563,21 @@ namespace ClauTextSharp.load_data
 			int itemListCount = 0;
             int userTypeListCount = 0;
 
-			for (int i = 0; i < ut.ilist.size(); ++i) {
+            for (int i = 0; i < ut.commentList.size(); ++i)
+            {
+                for (int k = 0; k < depth; ++k)
+                {
+                    sw.Write("\t");
+                }
+                sw.Write(ut.commentList.get(i));
+
+                if (i < ut.commentList.size() - 1 || false == ut.ilist.empty())
+                {
+                    sw.Write("\n");
+                }
+
+            }
+            for (int i = 0; i < ut.ilist.size(); ++i) {
 				if (ut.IsItemType(i)) {
 					for (int j = 0; j < ut.itemList.get(itemListCount).size(); j++) {
 						for (int k = 0; k < depth; ++k) {
@@ -746,53 +745,6 @@ namespace ClauTextSharp.load_data
 			}
 			return temp;
 		}
-
-        // ReplaceAll
-        public static void ReplaceAll(UserType temp, Vector<String> target_ch, Vector<String> result_ch) {
-            int itemListSize = temp.GetItemListSize();
-            int userTypeListSize = temp.GetUserTypeListSize();
-
-            for (int i = 0; i < itemListSize; ++i) {
-                ItemType<String> itemList = temp.GetItemList(i);
-
-                itemList.SetVal(Utility.ChangeStr(itemList.GetVal(), target_ch, result_ch));
-            }
-
-            if (userTypeListSize > 100) { ///  chk 20, ... ?
-                int count = userTypeListSize;
-                Thread threadA = new Thread(DoThread);
-                Thread threadB = new Thread(DoThread);
-                Thread threadC = new Thread(DoThread);
-                Thread threadD = new Thread(DoThread);
-
-                DoThreadData param = new DoThreadData();
-                param.target_ch = target_ch;
-                param.result_ch = result_ch;
-                param.utVec = temp.userTypeList;
-
-                param.utVecStart = 0; param.utVecEnd = count / 4 - 1;
-                threadA.Start(new DoThreadData(param));
-
-                param.utVecStart = count / 4; param.utVecEnd = (count / 4) * 2 - 1;
-                threadB.Start(new DoThreadData(param));
-
-                param.utVecStart = (count / 4) * 2; param.utVecEnd = (count / 4) * 3 - 1;
-                threadC.Start(new DoThreadData(param));
-
-                param.utVecStart = (count / 4) * 3; param.utVecEnd = count - 1;
-                threadD.Start(new DoThreadData(param));
-
-                threadA.Join();
-                threadB.Join();
-                threadC.Join();
-                threadD.Join();
-            }
-            else {
-                for (int i = 0; i < userTypeListSize; ++i) {
-                    ReplaceAll(temp.GetUserTypeList(i), target_ch, result_ch);
-                }
-            }
-        }
 
         // Find Directory?
         public static Pair<bool, Vector<UserType>> Find(UserType global, String _position) /// option, option_offset

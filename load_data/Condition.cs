@@ -546,7 +546,8 @@ namespace ClauTextSharp.load_data
 
         private void Init(String condition)
         {
-            String str = Utility.AddSpace(condition);
+            String str = "";
+            Utility.AddSpace(condition, ref str);
 
             StringTokenizer tokenizer = new StringTokenizer(str, Utility.beforeWhitespaceVec);
 
